@@ -1,0 +1,3597 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>⚔️ Chasing Adventure - Multiplayer</title>
+<script crossorigin="anonymous" src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script crossorigin="anonymous" src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script crossorigin="anonymous" src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script crossorigin="anonymous" src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg-primary:#0d0d14;--bg-secondary:#13131f;--bg-tertiary:#1a1a2e;--bg-card:#1e1e30;
+  --bg-card-hover:#252538;--bg-input:#111120;--border:#2a2a45;--border-focus:#7c5cbf;
+  --gold:#d4af37;--gold-dim:#9a7e26;--purple:#7c5cbf;--purple-bright:#9b6ddf;--purple-dim:#4a3670;
+  --red:#e05252;--red-dim:#7a2a2a;--green:#4caf50;--green-dim:#2a5e2c;
+  --blue:#4a90d9;--orange:#e08c3c;
+  --text-primary:#e8e8f0;--text-secondary:#9090aa;--text-muted:#5a5a70;
+  --font:'Inter','Segoe UI',system-ui,sans-serif;--radius:8px;--radius-lg:12px;
+  --shadow:0 4px 24px rgba(0,0,0,.4);
+}
+html{font-family:var(--font);font-size:14px}
+body{background:var(--bg-primary);color:var(--text-primary);min-height:100vh;overflow-x:hidden}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--bg-secondary)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--purple-dim)}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+@keyframes toast{from{opacity:0;transform:translateX(100%)}to{opacity:1;transform:translateX(0)}}
+@keyframes critGlow{0%,100%{box-shadow:0 0 8px var(--gold)}50%{box-shadow:0 0 24px var(--gold)}}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 16px;
+  border-radius:var(--radius);border:1px solid transparent;font-size:13px;font-weight:500;
+  cursor:pointer;transition:all .15s;white-space:nowrap;font-family:var(--font)}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:var(--purple);color:#fff;border-color:var(--purple-bright)}
+.btn-primary:hover{background:var(--purple-bright)}
+.btn-gold{background:var(--gold-dim);color:#fff;border-color:var(--gold)}
+.btn-gold:hover{background:var(--gold);color:#1a1a00}
+.btn-danger{background:var(--red-dim);color:#fff;border-color:var(--red)}
+.btn-danger:hover{background:var(--red)}
+.btn-success{background:var(--green-dim);color:#fff;border-color:var(--green)}
+.btn-success:hover{background:var(--green)}
+.btn-ghost{background:transparent;color:var(--text-secondary);border-color:var(--border)}
+.btn-ghost:hover{background:var(--bg-card-hover);color:var(--text-primary)}
+.btn-sm{padding:5px 10px;font-size:12px}.btn-lg{padding:12px 24px;font-size:15px}.btn-icon{padding:7px}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+input,select,textarea{background:var(--bg-input);color:var(--text-primary);border:1px solid var(--border);
+  border-radius:var(--radius);padding:8px 12px;font-size:13px;font-family:var(--font);
+  width:100%;transition:border-color .15s;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--border-focus)}
+input::placeholder,textarea::placeholder{color:var(--text-muted)}
+select option{background:var(--bg-card)}
+label{display:block;font-size:12px;color:var(--text-secondary);margin-bottom:4px}
+.form-group{margin-bottom:12px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;transition:border-color .15s}
+.card-title{font-size:14px;font-weight:600;color:var(--gold);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:.5px;text-transform:uppercase}
+.badge-purple{background:var(--purple-dim);color:#c4a8ff;border:1px solid var(--purple-dim)}
+.badge-gold{background:rgba(212,175,55,.15);color:var(--gold);border:1px solid rgba(212,175,55,.3)}
+.badge-red{background:var(--red-dim);color:#ff9999;border:1px solid var(--red-dim)}
+.badge-green{background:var(--green-dim);color:#80d084;border:1px solid var(--green-dim)}
+.badge-blue{background:rgba(74,144,217,.15);color:var(--blue);border:1px solid rgba(74,144,217,.3)}
+.badge-orange{background:rgba(224,140,60,.15);color:var(--orange);border:1px solid rgba(224,140,60,.3)}
+.badge-gray{background:rgba(255,255,255,.05);color:var(--text-secondary);border:1px solid var(--border)}
+.hp-bar{height:8px;background:var(--bg-secondary);border-radius:4px;overflow:hidden}
+.hp-fill{height:100%;border-radius:4px;transition:width .3s,background .3s}
+.hp-high{background:var(--green)}.hp-mid{background:var(--orange)}.hp-low{background:var(--red)}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:1000;display:flex;
+  align-items:center;justify-content:center;padding:16px;animation:fadeIn .15s ease}
+.modal{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);
+  padding:24px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow);animation:fadeIn .2s ease}
+.modal-sm{max-width:380px}.modal-lg{max-width:720px}
+.modal-title{font-size:16px;font-weight:600;color:var(--gold);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+.tabs{display:flex;gap:2px;background:var(--bg-secondary);padding:4px;border-radius:var(--radius);margin-bottom:16px}
+.tab{flex:1;padding:7px 12px;border-radius:6px;border:none;background:none;color:var(--text-secondary);
+  cursor:pointer;font-size:12px;font-weight:500;transition:all .15s;font-family:var(--font)}
+.tab.active{background:var(--bg-card);color:var(--text-primary)}
+.tab:hover:not(.active){color:var(--text-primary)}
+.stat-box{background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius);padding:10px 8px;text-align:center;transition:all .15s}
+.stat-box:hover{border-color:var(--purple);background:var(--bg-card)}
+.stat-name{font-size:10px;font-weight:700;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase}
+.stat-value{font-size:22px;font-weight:700;color:var(--text-primary);line-height:1}
+.stat-mod{font-size:12px;color:var(--purple-bright);font-weight:600}
+.toast-container{position:fixed;top:16px;right:16px;z-index:2000;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);
+  padding:12px 16px;min-width:240px;max-width:340px;box-shadow:var(--shadow);
+  animation:toast .3s ease;font-size:13px;display:flex;align-items:flex-start;gap:10px;cursor:pointer;pointer-events:all}
+.toast-success{border-color:var(--green)}.toast-error{border-color:var(--red)}
+.toast-warning{border-color:var(--orange)}.toast-info{border-color:var(--purple)}
+.dice-result{background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius);
+  padding:8px 12px;display:flex;align-items:center;gap:8px;font-size:13px}
+.dice-result.crit{border-color:var(--gold);animation:critGlow 1s ease infinite}
+.dice-result.fail{border-color:var(--red)}
+.init-item{background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius);
+  padding:10px 12px;display:flex;align-items:center;gap:10px;transition:all .15s}
+.init-item.current{border-color:var(--gold);background:rgba(212,175,55,.08)}
+.init-item.defeated{opacity:.4}
+.inv-item{background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius);
+  padding:8px 12px;display:flex;align-items:center;justify-content:space-between;font-size:13px}
+.skill-chip{background:var(--bg-secondary);border:1px solid var(--border);border-radius:20px;padding:3px 10px;font-size:11px;display:inline-flex;align-items:center;gap:4px}
+.xp-bar{height:6px;background:var(--bg-secondary);border-radius:3px;overflow:hidden;margin-top:4px}
+.xp-fill{height:100%;background:linear-gradient(90deg,var(--purple-dim),var(--purple-bright));border-radius:3px;transition:width .5s}
+.log-entry{font-size:12px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04);display:flex;gap:8px}
+.log-time{color:var(--text-muted);white-space:nowrap;font-size:11px}
+.pulse-dot{width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse 1.5s ease infinite;flex-shrink:0}
+.num-input-wrap{display:flex;align-items:center;gap:4px}
+.num-input-wrap input{text-align:center;width:60px}
+.section-header{font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.section-header::after{content:'';flex:1;height:1px;background:var(--border)}
+.empty-state{text-align:center;padding:32px 16px;color:var(--text-muted)}
+.empty-state .icon{font-size:32px;margin-bottom:8px;opacity:.5}
+.empty-state p{font-size:13px}
+.divider{height:1px;background:var(--border);margin:16px 0}
+.flex{display:flex}.flex-col{display:flex;flex-direction:column}.items-center{align-items:center}
+.justify-between{justify-content:space-between}.gap-2{gap:8px}.gap-3{gap:12px}.gap-4{gap:16px}
+.flex-1{flex:1}.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.grid-6{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+.mt-2{margin-top:8px}.mb-2{margin-bottom:8px}.mb-3{margin-bottom:12px}.p-3{padding:12px}
+.truncate{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:768px){
+  .form-row,.form-row-3{grid-template-columns:1fr}
+  .grid-6{grid-template-columns:repeat(3,1fr)}
+  .modal{padding:16px}
+  .hide-mobile{display:none!important}
+}
+
+</style>
+<base target="_blank">
+</head>
+<body>
+<div id="root">
+  <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;flex-direction:column;gap:16px;color:#d4af37">
+    <div style="font-size:48px">⚔️</div>
+    <div style="font-size:18px;font-weight:700;letter-spacing:2px">CHASING ADVENTURE</div>
+    <div style="font-size:13px;color:#5a5a70">Cargando...</div>
+  </div>
+</div>
+<script type="text/babel" data-presets="react,env">
+
+// ============================================================
+// SUPABASE CONFIG
+// ============================================================
+const SUPABASE_URL = "https://iluijhrkxqqnnwisoqgh.supabase.co"
+const SUPABASE_KEY = "sb_publishable_t763_xwSr-t9A9LumCQojw_f5ly6voh"
+const { createClient } = supabase
+const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY)
+
+// ============================================================
+// REACT HOOKS (globales para Babel)
+// ============================================================
+const { useState, useEffect, useRef } = React
+
+// ── Zustand shim (standalone, sin npm) ──────────────────────────────────────
+const _stores = new Map()
+const _listeners = new Map()
+
+function create(creator) {
+  let state = {}
+  const listeners = new Set()
+  
+  const get = () => state
+  const set = (partial) => {
+    const next = typeof partial === 'function' ? partial(state) : partial
+    state = { ...state, ...next }
+    listeners.forEach(l => l(state))
+  }
+  
+  state = creator(set, get)
+  
+  function useStore(selector) {
+    const [, forceRender] = React.useReducer(x => x + 1, 0)
+    const selectorRef = React.useRef(selector)
+    const stateRef = React.useRef(selector ? selector(state) : state)
+    selectorRef.current = selector
+    
+    React.useEffect(() => {
+      const listener = (newState) => {
+        const newSlice = selectorRef.current ? selectorRef.current(newState) : newState
+        // Shallow compare
+        if (newSlice !== stateRef.current) {
+          stateRef.current = newSlice
+          forceRender()
+        }
+      }
+      listeners.add(listener)
+      return () => listeners.delete(listener)
+    }, [])
+    
+    return selector ? selector(state) : state
+  }
+  
+  useStore.getState = get
+  useStore.setState = set
+  
+  return useStore
+}
+
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// UTILIDADES
+// ─────────────────────────────────────────────────────────────────────────────
+const genId   = () => Math.random().toString(36).slice(2, 10)
+const genCode = () => Math.random().toString(36).slice(2, 8).toUpperCase()
+const now     = () => new Date().toISOString()
+const hora    = () => new Date().toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit',second:'2-digit'})
+
+const calcMod    = v => Math.floor((v - 10) / 2)
+const modStr     = v => { const m = calcMod(v); return m >= 0 ? `+${m}` : `${m}` }
+const xpParaNivel = n => n <= 1 ? 0 : Math.floor(100 * n * (n - 1) / 2)
+const hpMaxima   = (clase, nivel, con) =>
+  Math.max(1, (clase.vidaBase || 8) + ((clase.vidaPorNivel || 2) * (nivel - 1)) + (calcMod(con) * nivel))
+const armorBase  = (dex, bonus = 0) => 10 + calcMod(dex) + bonus
+
+const tirarDado  = caras => Math.floor(Math.random() * caras) + 1
+const tirarDados = (n, caras) => {
+  const rs = Array.from({length: n}, () => tirarDado(caras))
+  return { total: rs.reduce((a,b) => a+b, 0), resultados: rs }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CONSTANTES
+// ─────────────────────────────────────────────────────────────────────────────
+
+const DADOS = [4,6,8,10,12,20,100]
+
+const CLASES_BASE = [
+  { id:'guerrero', nombre:'Guerrero',   vidaBase:10, vidaPorNivel:3, atributoPrincipal:'str', isCustom:false,
+    recursosEspeciales:[{nombre:'Puntos de Furia', max:3, actual:3, icono:'🔥'}],
+    bonificaciones:[{atributo:'str', cantidad:2, cadaNiveles:4}],
+    habilidades:[
+      {id:'ataque-poderoso', nombre:'Ataque Poderoso', tipo:'activa', descripcion:'Doble daño en el próximo ataque.', daño:'×2', coste:1, recarga:1, icono:'⚔️'},
+      {id:'postura-defensiva', nombre:'Postura Defensiva', tipo:'activa', descripcion:'+3 armadura hasta tu próximo turno.', daño:'', coste:1, recarga:1, icono:'🛡️'},
+      {id:'resistencia', nombre:'Resistencia', tipo:'pasiva', descripcion:'Reduce el daño físico recibido en 2.', daño:'', coste:0, recarga:0, icono:'💪'},
+    ]},
+  { id:'picaro', nombre:'Pícaro',       vidaBase:8,  vidaPorNivel:2, atributoPrincipal:'dex', isCustom:false,
+    recursosEspeciales:[{nombre:'Puntos de Sombra', max:4, actual:4, icono:'🌑'}],
+    bonificaciones:[{atributo:'dex', cantidad:2, cadaNiveles:4}],
+    habilidades:[
+      {id:'ataque-furtivo', nombre:'Ataque Furtivo',  tipo:'activa', descripcion:'+1d6 daño adicional si tienes ventaja.', daño:'+1d6', coste:1, recarga:0, icono:'🗡️'},
+      {id:'evasion',        nombre:'Evasión',          tipo:'activa', descripcion:'Esquiva el próximo ataque automáticamente.', daño:'', coste:2, recarga:2, icono:'💨'},
+      {id:'veneno-rapido',  nombre:'Veneno Rápido',    tipo:'activa', descripcion:'Aplica estado Veneno al objetivo.', daño:'veneno', coste:1, recarga:3, icono:'☠️'},
+      {id:'paso-silencioso',nombre:'Paso Silencioso',  tipo:'pasiva', descripcion:'Ventaja en pruebas de sigilo.', daño:'', coste:0, recarga:0, icono:'🐾'},
+    ]},
+  { id:'mago', nombre:'Mago',           vidaBase:6,  vidaPorNivel:1, atributoPrincipal:'int', isCustom:false,
+    recursosEspeciales:[{nombre:'Puntos de Maná', max:6, actual:6, icono:'💎'}],
+    bonificaciones:[{atributo:'int', cantidad:2, cadaNiveles:4}],
+    habilidades:[
+      {id:'bola-de-fuego',  nombre:'Bola de Fuego',   tipo:'activa', descripcion:'2d6 daño de fuego en área.', daño:'2d6', coste:2, recarga:0, icono:'🔥'},
+      {id:'rayo-arcano',    nombre:'Rayo Arcano',      tipo:'activa', descripcion:'1d10+INT daño mágico a un objetivo.', daño:'1d10+INT', coste:1, recarga:0, icono:'⚡'},
+      {id:'escudo-magico',  nombre:'Escudo Mágico',    tipo:'activa', descripcion:'+4 armadura hasta el próximo turno.', daño:'', coste:1, recarga:1, icono:'🔮'},
+      {id:'concentracion',  nombre:'Concentración',    tipo:'pasiva', descripcion:'+INT a todas las tiradas de hechizo.', daño:'', coste:0, recarga:0, icono:'🧠'},
+    ]},
+  { id:'clerigo', nombre:'Clérigo',     vidaBase:8,  vidaPorNivel:2, atributoPrincipal:'wis', isCustom:false,
+    recursosEspeciales:[{nombre:'Puntos Divinos', max:5, actual:5, icono:'✨'}],
+    bonificaciones:[{atributo:'wis', cantidad:2, cadaNiveles:4}],
+    habilidades:[
+      {id:'curacion',      nombre:'Curación',          tipo:'activa', descripcion:'Restaura 1d8+WIS HP a un aliado.', daño:'1d8+WIS', coste:2, recarga:0, icono:'💚'},
+      {id:'palabra-sagrada',nombre:'Palabra Sagrada',  tipo:'activa', descripcion:'Elimina un estado negativo de un aliado.', daño:'', coste:2, recarga:2, icono:'📿'},
+      {id:'golpe-sagrado', nombre:'Golpe Sagrado',     tipo:'activa', descripcion:'1d6 daño sagrado extra al siguiente ataque.', daño:'1d6', coste:1, recarga:0, icono:'☀️'},
+      {id:'fe-inquebrantable',nombre:'Fe Inquebrantable',tipo:'pasiva',descripcion:'+WIS a tiradas de salvación.', daño:'', coste:0, recarga:0, icono:'🙏'},
+    ]},
+  { id:'explorador', nombre:'Explorador',vidaBase:8, vidaPorNivel:2, atributoPrincipal:'dex', isCustom:false,
+    recursosEspeciales:[{nombre:'Flechas Especiales', max:5, actual:5, icono:'🏹'}],
+    bonificaciones:[{atributo:'dex', cantidad:1, cadaNiveles:4},{atributo:'wis', cantidad:1, cadaNiveles:4}],
+    habilidades:[
+      {id:'disparo-preciso', nombre:'Disparo Preciso', tipo:'activa', descripcion:'1d8+DEX, ignora bonos de armadura.', daño:'1d8+DEX', coste:1, recarga:0, icono:'🎯'},
+      {id:'rastrear',       nombre:'Rastrear',          tipo:'activa', descripcion:'Ventaja en investigación y percepción.', daño:'', coste:0, recarga:0, icono:'🔍'},
+      {id:'trampa',         nombre:'Trampa',             tipo:'activa', descripcion:'El próximo enemigo que se mueva recibe 2d4.', daño:'2d4', coste:1, recarga:3, icono:'⚙️'},
+      {id:'vista-aguda',    nombre:'Vista Aguda',        tipo:'pasiva', descripcion:'No puede ser sorprendido.', daño:'', coste:0, recarga:0, icono:'👁️'},
+    ]},
+]
+
+const AFINIDADES       = ['Hostil','Desconfiado','Neutral','Amistoso','Aliado']
+const ESTADOS_EMOCIONALES = ['Enfadado','Triste','Neutral','Contento','Eufórico','Miedoso']
+const TIPOS_ESCENA     = ['Exploración','Combate','Diálogo','Descanso']
+
+const TIPOS_RELACION   = ['Amistad','Rivalidad','Amor','Respeto','Miedo','Odio','Deuda','Confianza']
+const RELACION_EMOJI   = {Amistad:'🤝',Rivalidad:'⚔️',Amor:'❤️',Respeto:'🎖️',Miedo:'😨',Odio:'💢',Deuda:'💰',Confianza:'🔐'}
+
+const ARMAS_BASE = [
+  {id:'daga',      nombre:'Daga',          dadoCantidad:1, dadoCaras:4,  modificador:0, tipo:'arma', descripcion:'Arma ligera y veloz.',   icono:'🗡️'},
+  {id:'espada-c',  nombre:'Espada corta',  dadoCantidad:1, dadoCaras:6,  modificador:0, tipo:'arma', descripcion:'Equilibrio y velocidad.',icono:'⚔️'},
+  {id:'espada-l',  nombre:'Espada larga',  dadoCantidad:1, dadoCaras:8,  modificador:0, tipo:'arma', descripcion:'Versátil y fiable.',     icono:'⚔️'},
+  {id:'mandoble',  nombre:'Mandoble',      dadoCantidad:1, dadoCaras:12, modificador:0, tipo:'arma', descripcion:'Gran daño, dos manos.',  icono:'🗡️'},
+  {id:'arco',      nombre:'Arco corto',    dadoCantidad:1, dadoCaras:6,  modificador:0, tipo:'arma', descripcion:'Ataque a distancia.',    icono:'🏹'},
+  {id:'arco-l',    nombre:'Arco largo',    dadoCantidad:1, dadoCaras:8,  modificador:0, tipo:'arma', descripcion:'Gran alcance.',          icono:'🏹'},
+  {id:'hacha',     nombre:'Hacha de batalla',dadoCantidad:1,dadoCaras:8, modificador:0, tipo:'arma', descripcion:'Potente y directa.',     icono:'🪓'},
+  {id:'maza',      nombre:'Maza',          dadoCantidad:1, dadoCaras:6,  modificador:2, tipo:'arma', descripcion:'+2 vs armaduras.',       icono:'🔨'},
+  {id:'baston',    nombre:'Bastón arcano', dadoCantidad:1, dadoCaras:6,  modificador:0, tipo:'arma', descripcion:'Canal de magia.',        icono:'🪄'},
+]
+
+const ESTADOS_BASE = [
+  {id:'sangrado',      nombre:'Sangrado',     icono:'🩸', descripcion:'Pierde 1d4 HP al inicio de cada turno.',         duracion:3, tipo:'negativo', efecto:'daño_turno',   valorEfecto:3},
+  {id:'veneno',        nombre:'Veneno',       icono:'☠️', descripcion:'Pierde 2 HP al inicio de cada turno.',            duracion:4, tipo:'negativo', efecto:'daño_turno',   valorEfecto:2},
+  {id:'quemadura',     nombre:'Quemadura',    icono:'🔥', descripcion:'Pierde 1d6 HP al inicio. -2 DEX.',               duracion:2, tipo:'negativo', efecto:'daño_turno',   valorEfecto:4},
+  {id:'congelacion',   nombre:'Congelación',  icono:'❄️', descripcion:'No puede moverse. -2 DEX.',                      duracion:2, tipo:'negativo', efecto:'sin_movimiento',valorEfecto:0},
+  {id:'aturdimiento',  nombre:'Aturdimiento', icono:'💫', descripcion:'Pierde su próximo turno.',                        duracion:1, tipo:'negativo', efecto:'sin_accion',   valorEfecto:0},
+  {id:'miedo',         nombre:'Miedo',        icono:'😨', descripcion:'Desventaja en todas las tiradas.',                duracion:3, tipo:'negativo', efecto:'desventaja',   valorEfecto:0},
+  {id:'debilidad',     nombre:'Debilidad',    icono:'😞', descripcion:'-4 a todas las tiradas de daño.',                duracion:3, tipo:'negativo', efecto:'mod_daño',     valorEfecto:-4},
+  {id:'ceguera',       nombre:'Ceguera',      icono:'🙈', descripcion:'No puede atacar a distancia. Desventaja melee.', duracion:2, tipo:'negativo', efecto:'ceguera',      valorEfecto:0},
+  {id:'invisibilidad', nombre:'Invisibilidad',icono:'👻', descripcion:'No puede ser atacado directamente.',              duracion:2, tipo:'positivo', efecto:'no_objetivo',  valorEfecto:0},
+  {id:'turno-extra',   nombre:'Turno Extra',  icono:'⚡', descripcion:'Realiza una acción adicional este turno.',        duracion:1, tipo:'positivo', efecto:'accion_extra', valorEfecto:0},
+  {id:'escudo',        nombre:'Escudo',       icono:'🛡️', descripcion:'+3 Armadura hasta el fin de tu turno.',           duracion:1, tipo:'positivo', efecto:'mod_armadura', valorEfecto:3},
+  {id:'regeneracion',  nombre:'Regeneración', icono:'💚', descripcion:'Recupera 2 HP al inicio de cada turno.',         duracion:3, tipo:'positivo', efecto:'cura_turno',   valorEfecto:2},
+]
+
+const SLOT_EQUIPAMIENTO = ['arma-principal','arma-secundaria','armadura','accesorio-1','accesorio-2']
+const SLOT_LABEL = {'arma-principal':'Arma principal','arma-secundaria':'Arma secundaria','armadura':'Armadura','accesorio-1':'Accesorio 1','accesorio-2':'Accesorio 2'}
+const SLOT_ICONO = {'arma-principal':'⚔️','arma-secundaria':'🗡️','armadura':'🛡️','accesorio-1':'💍','accesorio-2':'📿'}
+
+const afinidadPorNivel = n => n<=20?'Hostil':n<=40?'Desconfiado':n<=60?'Neutral':n<=80?'Amistoso':'Aliado'
+
+
+
+// ═══ store.js (con Supabase) ═══
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SUPABASE CONFIG
+// ─────────────────────────────────────────────────────────────────────────────
+const SUPABASE_URL = "https://iluijhrkxqqnnwisoqgh.supabase.co"
+const SUPABASE_KEY = "sb_publishable_t763_xwSr-t9A9LumCQojw_f5ly6voh"
+const { createClient } = supabase
+const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PERSISTENCIA SUPABASE
+// ─────────────────────────────────────────────────────────────────────────────
+
+const handleError = (error, toast) => {
+  if (error) {
+    console.error('Supabase error:', error)
+    if (toast) toast(error.message || 'Error de conexion', 'error')
+    return true
+  }
+  return false
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ESTADO INICIAL
+// ─────────────────────────────────────────────────────────────────────────────
+const estadoInicial = () => ({
+  usuarioActual: null,
+  usuarios: [],
+  partidas: [],
+  partidaActiva: null,
+  personajes: [],
+  pnjs: [...SEED_PNJS],
+  enemigos: [...SEED_ENEMIGOS],
+  clases: [...CLASES_BASE],
+  armas: [...ARMAS_BASE],
+  estadosDisponibles: [...ESTADOS_BASE],
+  iniciativa: [],
+  log: [],
+  tiradas: [],
+  toasts: [],
+  vista: 'login',
+  combateActivo: false,
+  turnoActual: 0,
+  modalActivo: null,
+  supabaseReady: false,
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// STORE CON SUPABASE
+// ─────────────────────────────────────────────────────────────────────────────
+const useStore = create((set, get) => {
+  const subscriptions = []
+
+  const subscribeToPartida = (partidaId) => {
+    subscriptions.forEach(sub => sub.unsubscribe())
+    subscriptions.length = 0
+
+    if (!partidaId) return
+
+    const personajesChannel = supabaseClient
+      .channel('personajes:' + partidaId)
+      .on('postgres_changes', {
+        event: '*', schema: 'public', table: 'personajes',
+        filter: 'partida_id=eq.' + partidaId
+      }, (payload) => {
+        if (payload.eventType === 'INSERT') {
+          set(s => ({ personajes: [...s.personajes, payload.new] }))
+        } else if (payload.eventType === 'UPDATE') {
+          set(s => ({
+            personajes: s.personajes.map(p => p.id === payload.new.id ? payload.new : p)
+          }))
+        } else if (payload.eventType === 'DELETE') {
+          set(s => ({
+            personajes: s.personajes.filter(p => p.id !== payload.old.id)
+          }))
+        }
+      })
+      .subscribe()
+    subscriptions.push(personajesChannel)
+
+    const escenasChannel = supabaseClient
+      .channel('escenas:' + partidaId)
+      .on('postgres_changes', {
+        event: '*', schema: 'public', table: 'escenas',
+        filter: 'partida_id=eq.' + partidaId
+      }, (payload) => {
+        const { partidaActiva } = get()
+        if (!partidaActiva) return
+        let nuevasEscenas = [...(partidaActiva.escenas || [])]
+        if (payload.eventType === 'INSERT') nuevasEscenas.push(payload.new)
+        else if (payload.eventType === 'UPDATE') nuevasEscenas = nuevasEscenas.map(e => e.id === payload.new.id ? payload.new : e)
+        else if (payload.eventType === 'DELETE') nuevasEscenas = nuevasEscenas.filter(e => e.id !== payload.old.id)
+        set({
+          partidaActiva: { ...partidaActiva, escenas: nuevasEscenas },
+          partidas: get().partidas.map(p => p.id === partidaId ? { ...p, escenas: nuevasEscenas } : p)
+        })
+      })
+      .subscribe()
+    subscriptions.push(escenasChannel)
+
+    const logChannel = supabaseClient
+      .channel('log:' + partidaId)
+      .on('postgres_changes', {
+        event: 'INSERT', schema: 'public', table: 'log_eventos',
+        filter: 'partida_id=eq.' + partidaId
+      }, (payload) => {
+        set(s => ({ log: [payload.new, ...s.log].slice(0, 150) }))
+      })
+      .subscribe()
+    subscriptions.push(logChannel)
+
+    const enemigosChannel = supabaseClient
+      .channel('enemigos:' + partidaId)
+      .on('postgres_changes', {
+        event: '*', schema: 'public', table: 'enemigos_combate',
+        filter: 'partida_id=eq.' + partidaId
+      }, (payload) => {
+        const { partidaActiva } = get()
+        if (!partidaActiva) return
+        let nuevos = [...(partidaActiva.enemigosEnCombate || [])]
+        if (payload.eventType === 'INSERT') nuevos.push(payload.new)
+        else if (payload.eventType === 'UPDATE') nuevos = nuevos.map(e => e.id === payload.new.id ? payload.new : e)
+        else if (payload.eventType === 'DELETE') nuevos = nuevos.filter(e => e.id !== payload.old.id)
+        set({
+          partidaActiva: { ...partidaActiva, enemigosEnCombate: nuevos },
+          partidas: get().partidas.map(p => p.id === partidaId ? { ...p, enemigosEnCombate: nuevos } : p)
+        })
+      })
+      .subscribe()
+    subscriptions.push(enemigosChannel)
+
+    const iniciativaChannel = supabaseClient
+      .channel('iniciativa:' + partidaId)
+      .on('postgres_changes', {
+        event: '*', schema: 'public', table: 'iniciativa',
+        filter: 'partida_id=eq.' + partidaId
+      }, (payload) => {
+        if (payload.eventType === 'INSERT') set(s => ({ iniciativa: [...s.iniciativa, payload.new] }))
+        else if (payload.eventType === 'UPDATE') set(s => ({ iniciativa: s.iniciativa.map(i => i.id === payload.new.id ? payload.new : i) }))
+        else if (payload.eventType === 'DELETE') set(s => ({ iniciativa: s.iniciativa.filter(i => i.id !== payload.old.id) }))
+      })
+      .subscribe()
+    subscriptions.push(iniciativaChannel)
+  }
+
+  return {
+    ...estadoInicial(),
+
+    toast: (msg, tipo = 'info') => {
+      const id = genId()
+      set(s => ({ toasts: [...s.toasts, { id, mensaje: msg, tipo }] }))
+      setTimeout(() => set(s => ({ toasts: s.toasts.filter(t => t.id !== id) })), 3500)
+    },
+    cerrarToast: id => set(s => ({ toasts: s.toasts.filter(t => t.id !== id) })),
+
+    registrar: async (email, password, rol, nombre) => {
+      const { data: authData, error: authError } = await supabaseClient.auth.signUp({
+        email, password, options: { data: { nombre, rol } }
+      })
+      if (handleError(authError, get().toast)) return false
+      if (authData.user) {
+        const { error: dbError } = await supabaseClient.from('usuarios').insert({
+          id: authData.user.id, email, nombre, rol, creado_en: now()
+        })
+        if (handleError(dbError, get().toast)) return false
+        const usuario = { id: authData.user.id, email, nombre, rol, creadoEn: now() }
+        set({ usuarioActual: usuario, vista: 'lobby' })
+        get().toast('Bienvenido, ' + nombre + '!', 'success')
+        return true
+      }
+      return false
+    },
+
+    login: async (email, password, rol) => {
+      const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({ email, password })
+      if (handleError(authError, get().toast)) return false
+      if (authData.user) {
+        const { data: userData, error: userError } = await supabaseClient.from('usuarios').select('*').eq('id', authData.user.id).single()
+        if (handleError(userError, get().toast)) return false
+        if (userData && userData.rol === rol) {
+          set({ usuarioActual: userData, vista: 'lobby' })
+          get().toast('Bienvenido de nuevo, ' + userData.nombre + '!', 'success')
+          await get().cargarPartidasUsuario()
+          return true
+        } else {
+          get().toast('Rol incorrecto', 'error')
+          await supabaseClient.auth.signOut()
+          return false
+        }
+      }
+      return false
+    },
+
+    logout: async () => {
+      await supabaseClient.auth.signOut()
+      subscriptions.forEach(sub => sub.unsubscribe())
+      subscriptions.length = 0
+      set({ usuarioActual: null, partidaActiva: null, vista: 'login', combateActivo: false, iniciativa: [], log: [], tiradas: [], personajes: [], partidas: [] })
+    },
+
+    checkSession: async () => {
+      const { data: { session } } = await supabaseClient.auth.getSession()
+      if (session) {
+        const { data: userData } = await supabaseClient.from('usuarios').select('*').eq('id', session.user.id).single()
+        if (userData) {
+          set({ usuarioActual: userData, vista: 'lobby' })
+          await get().cargarPartidasUsuario()
+        }
+      }
+      set({ supabaseReady: true })
+    },
+
+    cargarPartidasUsuario: async () => {
+      const { usuarioActual } = get()
+      if (!usuarioActual) return
+      const { data: partidasDJ } = await supabaseClient.from('partidas').select('*').eq('dj_id', usuarioActual.id)
+      const { data: partidasJugador } = await supabaseClient.from('partida_jugadores').select('partida_id, partidas(*)').eq('usuario_id', usuarioActual.id)
+      const todas = [...(partidasDJ || []), ...(partidasJugador?.map(pj => pj.partidas) || [])]
+      set({ partidas: todas })
+    },
+
+    crearPartida: async (nombre) => {
+      const { usuarioActual, toast } = get()
+      if (!usuarioActual) return null
+      const codigo = genCode()
+      const { data, error } = await supabaseClient.from('partidas').insert({
+        codigo, nombre, dj_id: usuarioActual.id, estado: 'lobby', creada_en: now()
+      }).select().single()
+      if (handleError(error, toast)) return null
+      await supabaseClient.from('partida_jugadores').insert({ partida_id: data.id, usuario_id: usuarioActual.id })
+      const nuevasPartidas = [...get().partidas, data]
+      set({ partidas: nuevasPartidas, partidaActiva: data, vista: 'dj', log: [], tiradas: [], iniciativa: [], combateActivo: false })
+      subscribeToPartida(data.id)
+      toast('Partida "' + nombre + '" creada. Codigo: ' + data.codigo, 'success')
+      return data
+    },
+
+    unirseAPartida: async (codigo) => {
+      const { usuarioActual, toast, partidas } = get()
+      const { data: partida, error } = await supabaseClient.from('partidas').select('*').eq('codigo', codigo.toUpperCase()).single()
+      if (error || !partida) { toast('Codigo no encontrado', 'error'); return false }
+      if (partida.estado === 'finalizada') { toast('Esa partida ya finalizo', 'error'); return false }
+      const { data: yaUnido } = await supabaseClient.from('partida_jugadores').select('*').eq('partida_id', partida.id).eq('usuario_id', usuarioActual.id).single()
+      if (!yaUnido) {
+        const { error: joinError } = await supabaseClient.from('partida_jugadores').insert({ partida_id: partida.id, usuario_id: usuarioActual.id })
+        if (handleError(joinError, toast)) return false
+      }
+      const { data: personajesPartida } = await supabaseClient.from('personajes').select('*').eq('partida_id', partida.id)
+      const { data: escenas } = await supabaseClient.from('escenas').select('*').eq('partida_id', partida.id)
+      const partidaCompleta = { ...partida, escenas: escenas || [] }
+      set({ partidas: [...partidas, partidaCompleta], partidaActiva: partidaCompleta, personajes: personajesPartida || [], vista: 'jugador' })
+      subscribeToPartida(partida.id)
+      toast('Te has unido a "' + partida.nombre + '"', 'success')
+      return true
+    },
+
+    cargarPartida: async (pid) => {
+      const { usuarioActual } = get()
+      const { data: partida } = await supabaseClient.from('partidas').select('*').eq('id', pid).single()
+      if (!partida) return
+      const { data: escenas } = await supabaseClient.from('escenas').select('*').eq('partida_id', pid)
+      const { data: personajes } = await supabaseClient.from('personajes').select('*').eq('partida_id', pid)
+      const partidaCompleta = { ...partida, escenas: escenas || [] }
+      set({ partidaActiva: partidaCompleta, personajes: personajes || [], vista: partida.dj_id === usuarioActual.id ? 'dj' : 'jugador', combateActivo: partida.estado === 'activa' })
+      subscribeToPartida(pid)
+    },
+
+    actualizarPartida: async (cambios) => {
+      const { partidaActiva } = get()
+      if (!partidaActiva) return
+      const { error } = await supabaseClient.from('partidas').update(cambios).eq('id', partidaActiva.id)
+      if (error) console.error('Error actualizando partida:', error)
+      const actualizada = { ...partidaActiva, ...cambios }
+      set({ partidaActiva: actualizada, partidas: get().partidas.map(p => p.id === partidaActiva.id ? actualizada : p) })
+    },
+
+    crearEscena: async (datos) => {
+      const { partidaActiva } = get()
+      if (!partidaActiva) return
+      const { data, error } = await supabaseClient.from('escenas').insert({
+        partida_id: partidaActiva.id, titulo: datos.titulo, descripcion: datos.descripcion,
+        imagen: datos.imagen, tipo: datos.tipo, orden: (partidaActiva.escenas || []).length, is_activa: false
+      }).select().single()
+      if (error) { console.error(error); return }
+      return data
+    },
+
+    activarEscena: async (eid) => {
+      const { partidaActiva, actualizarPartida, agregarLog, combateActivo } = get()
+      if (!partidaActiva) return
+      await supabaseClient.from('escenas').update({ is_activa: false }).eq('partida_id', partidaActiva.id)
+      await supabaseClient.from('escenas').update({ is_activa: true }).eq('id', eid)
+      const { data: escenas } = await supabaseClient.from('escenas').select('*').eq('partida_id', partidaActiva.id)
+      const esc = escenas?.find(e => e.id === eid)
+      const extra = esc?.tipo === 'Combate' && !combateActivo ? { estado: 'activa' } : {}
+      await actualizarPartida({ escenas, escena_actual_id: eid, ...extra })
+      agregarLog('Escena: "' + esc?.titulo + '"')
+      get().toast('Escena: "' + esc?.titulo + '"', 'info')
+    },
+
+    eliminarEscena: async (eid) => {
+      const { partidaActiva, actualizarPartida } = get()
+      await supabaseClient.from('escenas').delete().eq('id', eid)
+      const nuevaEscenaId = partidaActiva.escena_actual_id === eid ? null : partidaActiva.escena_actual_id
+      await actualizarPartida({ escena_actual_id: nuevaEscenaId })
+    },
+
+    crearPersonaje: async (datos) => {
+      const { usuarioActual, partidaActiva, clases, agregarLog } = get()
+      const clase = clases.find(c => c.id === datos.claseId) || CLASES_BASE[0]
+      const vidaMax = hpMaxima(clase, 1, datos.con || 10)
+      const personajeData = {
+        usuario_id: usuarioActual.id, partida_id: partidaActiva?.id, nombre: datos.nombre,
+        clase_id: clase.id, nivel: 1, retrato: datos.retrato || '', descripcion: datos.descripcion || '',
+        str: datos.str || 10, dex: datos.dex || 10, con: datos.con || 10, int: datos.int || 10,
+        wis: datos.wis || 10, cha: datos.cha || 10, vida_max: vidaMax, vida_actual: vidaMax,
+        armadura: armorBase(datos.dex || 10), xp: 0, oro: datos.oro || 0,
+        recursos_actuales: {}, puntos_pendientes: 0, creado_en: now()
+      }
+      for (const r of (clase.recursosEspeciales || [])) personajeData.recursos_actuales[r.nombre] = r.max
+      const { data, error } = await supabaseClient.from('personajes').insert(personajeData).select().single()
+      if (error) { console.error(error); return }
+      set(s => ({ personajes: [...s.personajes, data] }))
+      agregarLog?.('✨ ' + data.nombre + ' se une a la aventura')
+      get().toast('Personaje "' + data.nombre + '" creado', 'success')
+      return data
+    },
+
+    actualizarPersonaje: async (pid, cambios) => {
+      const { personajes, clases } = get()
+      const p = personajes.find(x => x.id === pid)
+      if (!p) return
+      let extra = {}
+      if (cambios.con !== undefined || cambios.nivel !== undefined || cambios.clase_id !== undefined) {
+        const clase = clases.find(c => c.id === (cambios.clase_id || p.clase_id))
+        if (clase) {
+          const con = cambios.con ?? p.con, nivel = cambios.nivel ?? p.nivel
+          const nvm = hpMaxima(clase, nivel, con)
+          extra.vida_max = nvm; extra.vida_actual = Math.min(p.vida_actual + (nvm - p.vida_max), nvm)
+        }
+      }
+      if (cambios.dex !== undefined) extra.armadura = armorBase(cambios.dex)
+      const actualizaciones = { ...cambios, ...extra }
+      const { error } = await supabaseClient.from('personajes').update(actualizaciones).eq('id', pid)
+      if (error) console.error(error)
+      set(s => ({ personajes: s.personajes.map(x => x.id === pid ? { ...x, ...actualizaciones } : x) }))
+    },
+
+    aplicarDañoPersonaje: async (pid, cantidad) => {
+      const { personajes, agregarLog } = get()
+      const p = personajes.find(x => x.id === pid)
+      if (!p) return
+      const nv = Math.max(0, p.vida_actual - cantidad)
+      await get().actualizarPersonaje(pid, { vida_actual: nv })
+      agregarLog('🩸 ' + p.nombre + ': -' + cantidad + ' HP (' + p.vida_actual + '→' + nv + ')')
+    },
+
+    curarPersonaje: async (pid, cantidad) => {
+      const { personajes, agregarLog } = get()
+      const p = personajes.find(x => x.id === pid)
+      if (!p) return
+      const nv = Math.min(p.vida_max, p.vida_actual + cantidad)
+      await get().actualizarPersonaje(pid, { vida_actual: nv })
+      agregarLog('💚 ' + p.nombre + ': +' + cantidad + ' HP (' + p.vida_actual + '→' + nv + ')')
+    },
+
+    subirNivel: async (pid) => {
+      const { personajes, clases, agregarLog } = get()
+      const p = personajes.find(x => x.id === pid)
+      if (!p) return
+      const clase = clases.find(c => c.id === p.clase_id)
+      const nuevoNivel = p.nivel + 1
+      const bonusExtra = {}
+      for (const b of (clase?.bonificaciones || [])) {
+        if (nuevoNivel % b.cadaNiveles === 0) bonusExtra[b.atributo] = (p[b.atributo] || 10) + b.cantidad
+      }
+      await get().actualizarPersonaje(pid, { nivel: nuevoNivel, puntos_pendientes: (p.puntos_pendientes || 0) + 1, ...bonusExtra })
+      agregarLog('⬆️ ' + p.nombre + ' sube al nivel ' + nuevoNivel + '!')
+      get().toast('¡' + p.nombre + ' sube al nivel ' + nuevoNivel + '!', 'success')
+    },
+
+    ganarXP: async (pid, cantidad) => {
+      const { personajes } = get()
+      const p = personajes.find(x => x.id === pid)
+      if (!p) return
+      const nxp = p.xp + cantidad
+      await get().actualizarPersonaje(pid, { xp: nxp })
+      if (nxp >= xpParaNivel(p.nivel + 1)) await get().subirNivel(pid)
+    },
+
+    agregarAlInventario: async (pid, objeto) => {
+      const { personajes } = get()
+      const p = personajes.find(x => x.id === pid)
+      if (!p) return
+      if (objeto.apilable !== false) {
+        const { data: existente } = await supabaseClient.from('inventario_items').select('*').eq('personaje_id', pid).eq('nombre', objeto.nombre).eq('tipo', objeto.tipo).single()
+        if (existente) {
+          await supabaseClient.from('inventario_items').update({ cantidad: existente.cantidad + (objeto.cantidad || 1) }).eq('id', existente.id)
+          return
+        }
+      }
+      const item = {
+        personaje_id: pid, nombre: objeto.nombre, descripcion: objeto.descripcion || '',
+        cantidad: objeto.cantidad || 1, tipo: objeto.tipo || 'general', peso: objeto.peso || 0,
+        apilable: objeto.apilable !== false, dado_cantidad: objeto.dadoCantidad || null,
+        dado_caras: objeto.dadoCaras || null, modificador: objeto.modificador || 0,
+        icono: objeto.icono || '📦', slot: objeto.slot || null
+      }
+      await supabaseClient.from('inventario_items').insert(item)
+    },
+
+    quitarDelInventario: async (pid, itemId) => {
+      await supabaseClient.from('inventario_items').delete().eq('id', itemId)
+    },
+
+    transferirObjeto: async (fromPid, toPid, itemId, cantidad = 1) => {
+      const { personajes, toast, agregarLog } = get()
+      const from = personajes.find(x => x.id === fromPid)
+      const to = personajes.find(x => x.id === toPid)
+      if (!from || !to) return
+      const { data: item } = await supabaseClient.from('inventario_items').select('*').eq('id', itemId).single()
+      if (!item) return
+      if (cantidad >= item.cantidad) {
+        await supabaseClient.from('inventario_items').delete().eq('id', itemId)
+      } else {
+        await supabaseClient.from('inventario_items').update({ cantidad: item.cantidad - cantidad }).eq('id', itemId)
+      }
+      await get().agregarAlInventario(toPid, { ...item, cantidad })
+      agregarLog('📦 ' + from.nombre + ' transfiere ' + cantidad + 'x ' + item.nombre + ' a ' + to.nombre)
+      toast('Objeto transferido a ' + to.nombre, 'success')
+    },
+
+    equiparObjeto: async (pid, itemId, slot) => {
+      const { personajes } = get()
+      const p = personajes.find(x => x.id === pid)
+      if (!p) return
+      const eq = { ...(p.equipamiento || {}) }; eq[slot] = itemId
+      await supabaseClient.from('personajes').update({ equipamiento: eq }).eq('id', pid)
+      set(s => ({ personajes: s.personajes.map(x => x.id === pid ? { ...x, equipamiento: eq } : x) }))
+    },
+
+    desequiparObjeto: async (pid, slot) => {
+      const { personajes } = get()
+      const p = personajes.find(x => x.id === pid)
+      if (!p) return
+      const eq = { ...(p.equipamiento || {}) }; eq[slot] = null
+      await supabaseClient.from('personajes').update({ equipamiento: eq }).eq('id', pid)
+      set(s => ({ personajes: s.personajes.map(x => x.id === pid ? { ...x, equipamiento: eq } : x) }))
+    },
+
+    aplicarEstado: async (pid, estadoId, duracionOverride) => {
+      const { personajes, estadosDisponibles, agregarLog, toast } = get()
+      const p = personajes.find(x => x.id === pid)
+      if (!p) return
+      const def = estadosDisponibles.find(e => e.id === estadoId)
+      if (!def) return
+      const { data: yaExiste } = await supabaseClient.from('estados_personaje').select('*').eq('personaje_id', pid).eq('estado_id', estadoId).single()
+      if (yaExiste) { toast('El personaje ya tiene ese estado', 'warning'); return }
+      const nuevo = {
+        personaje_id: pid, estado_id: estadoId, nombre: def.nombre, icono: def.icono,
+        descripcion: def.descripcion, tipo: def.tipo, efecto: def.efecto,
+        valor_efecto: def.valorEfecto, turnos_restantes: duracionOverride || def.duracion, aplicado_en: now()
+      }
+      await supabaseClient.from('estados_personaje').insert(nuevo)
+      agregarLog(def.icono + ' ' + p.nombre + ' recibe estado: ' + def.nombre)
+      toast(def.nombre + ' aplicado a ' + p.nombre, def.tipo === 'positivo' ? 'success' : 'warning')
+    },
+
+    quitarEstado: async (pid, estadoId) => {
+      await supabaseClient.from('estados_personaje').delete().eq('personaje_id', pid).eq('estado_id', estadoId)
+    },
+
+    tick_estados: async () => {
+      const { personajes } = get()
+      for (const p of personajes) {
+        const { data: estados } = await supabaseClient.from('estados_personaje').select('*').eq('personaje_id', p.id)
+        if (!estados?.length) continue
+        for (const e of estados) {
+          const restantes = e.turnos_restantes - 1
+          if (restantes <= 0) {
+            await supabaseClient.from('estados_personaje').delete().eq('id', e.id)
+          } else {
+            await supabaseClient.from('estados_personaje').update({ turnos_restantes: restantes }).eq('id', e.id)
+            if (e.efecto === 'daño_turno') await get().aplicarDañoPersonaje(p.id, e.valor_efecto)
+            if (e.efecto === 'cura_turno') await get().curarPersonaje(p.id, e.valor_efecto)
+          }
+        }
+      }
+    },
+
+    crearEstadoCustom: async (datos) => {
+      const { estadosDisponibles, toast } = get()
+      const nuevo = { id: genId(), ...datos }
+      set({ estadosDisponibles: [...estadosDisponibles, nuevo] })
+      toast('Estado "' + datos.nombre + '" creado', 'success')
+    },
+
+    setRelacion: async (pid1, pid2, tipo, valor) => {
+      const { partidaActiva, agregarLog } = get()
+      if (!partidaActiva) return
+      const key = [pid1, pid2].sort().join('|')
+      const { data: existente } = await supabaseClient.from('relaciones').select('*').eq('partida_id', partidaActiva.id).eq('pid1', pid1).eq('pid2', pid2).single()
+      if (existente) {
+        await supabaseClient.from('relaciones').update({ tipo, valor, actualizado_en: now() }).eq('id', existente.id)
+      } else {
+        await supabaseClient.from('relaciones').insert({ partida_id: partidaActiva.id, pid1, pid2, tipo, valor, actualizado_en: now() })
+      }
+      agregarLog((RELACION_EMOJI[tipo] || '🔗') + ' Relacion actualizada: ' + tipo + ' (' + valor + ')')
+    },
+
+    getRelacion: async (pid1, pid2) => {
+      const { partidaActiva } = get()
+      const { data } = await supabaseClient.from('relaciones').select('*').eq('partida_id', partidaActiva?.id).or('and(pid1.eq.' + pid1 + ',pid2.eq.' + pid2 + '),and(pid1.eq.' + pid2 + ',pid2.eq.' + pid1 + ')').single()
+      return data
+    },
+
+    crearArmaCustom: async (datos) => {
+      const { armas, usuarioActual, toast } = get()
+      const nueva = { id: genId(), creado_por: usuarioActual.id, ...datos, tipo: 'arma' }
+      set({ armas: [...armas, nueva] })
+      toast('Arma "' + datos.nombre + '" creada', 'success')
+      return nueva
+    },
+    eliminarArmaCustom: async (id) => {
+      const { armas } = get()
+      set({ armas: armas.filter(a => a.id !== id) })
+    },
+
+    agregarHabilidadAClase: async (claseId, habilidad) => {
+      const { clases, toast } = get()
+      const nueva = { id: genId(), ...habilidad }
+      const nuevas = clases.map(c => c.id === claseId ? { ...c, habilidades: [...(c.habilidades || []), nueva] } : c)
+      set({ clases: nuevas })
+      toast('Habilidad "' + habilidad.nombre + '" anadida', 'success')
+    },
+    quitarHabilidadDeClase: async (claseId, habId) => {
+      const { clases } = get()
+      const nuevas = clases.map(c => c.id === claseId ? { ...c, habilidades: (c.habilidades || []).filter(h => h.id !== habId) } : c)
+      set({ clases: nuevas })
+    },
+
+    crearPnj: async (datos) => {
+      const { usuarioActual, toast } = get()
+      const p = {
+        creado_por: usuarioActual.id, nombre: datos.nombre, imagen: datos.imagen || '',
+        descripcion: datos.descripcion || '', afinidad: afinidadPorNivel(datos.nivelAmistad || 50),
+        nivel_amistad: datos.nivelAmistad || 50, estado_emocional: datos.estadoEmocional || 'Neutral'
+      }
+      const { data, error } = await supabaseClient.from('pnjs').insert(p).select().single()
+      if (error) { console.error(error); return }
+      toast('PNJ "' + datos.nombre + '" creado', 'success')
+      return data
+    },
+
+    actualizarPnj: async (id, cambios) => {
+      let extra = {}
+      if (cambios.nivel_amistad !== undefined) extra.afinidad = afinidadPorNivel(cambios.nivel_amistad)
+      await supabaseClient.from('pnjs').update({ ...cambios, ...extra }).eq('id', id)
+    },
+
+    eliminarPnj: async (id) => {
+      await supabaseClient.from('pnjs').delete().eq('id', id)
+    },
+
+    invocarPnjEnPartida: async (id) => {
+      const { partidaActiva } = get()
+      if (!partidaActiva) return
+      await supabaseClient.from('pnjs').update({ partida_id: partidaActiva.id, activo: true }).eq('id', id)
+    },
+
+    crearEnemigo: async (datos) => {
+      const { usuarioActual, toast } = get()
+      const e = {
+        creado_por: usuarioActual.id, nombre: datos.nombre,
+        vida_max: parseInt(datos.vidaMax) || 20, ataque: parseInt(datos.ataque) || 5,
+        defensa: parseInt(datos.defensa) || 12, dados_dano: datos.dadosDaño || '1d8',
+        habilidades: datos.habilidades || '', tipo: datos.tipo || 'normal'
+      }
+      const { data, error } = await supabaseClient.from('enemigos').insert(e).select().single()
+      if (error) { console.error(error); return }
+      toast('Enemigo "' + datos.nombre + '" creado', 'success')
+      return data
+    },
+
+    actualizarEnemigo: async (id, cambios) => {
+      await supabaseClient.from('enemigos').update(cambios).eq('id', id)
+    },
+
+    eliminarEnemigo: async (id) => {
+      await supabaseClient.from('enemigos').delete().eq('id', id)
+    },
+
+    anadirEnemigoACombate: async (id) => {
+      const { partidaActiva, enemigos } = get()
+      if (!partidaActiva) return
+      const base = enemigos.find(e => e.id === id)
+      if (!base) return
+      const inst = {
+        partida_id: partidaActiva.id, enemigo_id: base.id, nombre: base.nombre,
+        vida_max: base.vida_max, vida_actual: base.vida_max, ataque: base.ataque,
+        defensa: base.defensa, dados_dano: base.dados_dano, tipo: base.tipo,
+        derrotado: false, estados: []
+      }
+      await supabaseClient.from('enemigos_combate').insert(inst)
+    },
+
+    danarEnemigoCombate: async (iid, cant) => {
+      const { agregarLog } = get()
+      const { data: e } = await supabaseClient.from('enemigos_combate').select('*').eq('id', iid).single()
+      if (!e) return
+      const nv = Math.max(0, e.vida_actual - cant)
+      const derrotado = nv === 0
+      await supabaseClient.from('enemigos_combate').update({ vida_actual: nv, derrotado }).eq('id', iid)
+      agregarLog('⚔️ ' + e.nombre + ': -' + cant + ' HP' + (derrotado ? ' (¡Derrotado!)' : ''))
+      if (derrotado) get().toast(e.nombre + ' derrotado', 'success')
+    },
+
+    curarEnemigoCombate: async (iid, cant) => {
+      const { data: e } = await supabaseClient.from('enemigos_combate').select('*').eq('id', iid).single()
+      if (!e) return
+      await supabaseClient.from('enemigos_combate').update({
+        vida_actual: Math.min(e.vida_max, e.vida_actual + cant), derrotado: false
+      }).eq('id', iid)
+    },
+
+    eliminarEnemigoCombate: async (iid) => {
+      await supabaseClient.from('enemigos_combate').delete().eq('id', iid)
+      set(s => ({ iniciativa: s.iniciativa.filter(i => !(i.tipo === 'enemigo' && i.entity_id === iid)) }))
+    },
+
+    iniciarIniciativa: async () => {
+      const { partidaActiva, personajes } = get()
+      if (!partidaActiva) return
+      await supabaseClient.from('iniciativa').delete().eq('partida_id', partidaActiva.id)
+      const items = []
+      const { data: jugadores } = await supabaseClient.from('partida_jugadores').select('usuario_id').eq('partida_id', partidaActiva.id)
+      for (const { usuario_id } of (jugadores || [])) {
+        const p = personajes.find(x => x.usuario_id === usuario_id && x.partida_id === partidaActiva.id)
+        if (p) {
+          items.push({
+            partida_id: partidaActiva.id, tipo: 'jugador', entity_id: p.id, nombre: p.nombre,
+            vida_actual: p.vida_actual, vida_max: p.vida_max, roll: tirarDado(20) + calcMod(p.dex),
+            orden: items.length, derrotado: false
+          })
+        }
+      }
+      const { data: enemigos } = await supabaseClient.from('enemigos_combate').select('*').eq('partida_id', partidaActiva.id)
+      for (const e of (enemigos || [])) {
+        items.push({
+          partida_id: partidaActiva.id, tipo: 'enemigo', entity_id: e.id, nombre: e.nombre,
+          vida_actual: e.vida_actual, vida_max: e.vida_max, roll: tirarDado(20),
+          orden: items.length, derrotado: e.derrotado
+        })
+      }
+      items.sort((a, b) => b.roll - a.roll)
+      const itemsConOrden = items.map((item, idx) => ({ ...item, orden: idx }))
+      for (const item of itemsConOrden) {
+        await supabaseClient.from('iniciativa').insert(item)
+      }
+      set({ iniciativa: itemsConOrden, turnoActual: 0 })
+      get().agregarLog('🎲 Iniciativa: ' + itemsConOrden.map(i => i.nombre + '(' + i.roll + ')').join(', '))
+    },
+
+    moverEnIniciativa: async (from, to) => {
+      const { iniciativa } = get()
+      const a = [...iniciativa]
+      const [item] = a.splice(from, 1)
+      a.splice(to, 0, item)
+      for (let i = 0; i < a.length; i++) {
+        await supabaseClient.from('iniciativa').update({ orden: i }).eq('id', a[i].id)
+      }
+      set({ iniciativa: a })
+    },
+
+    siguienteTurno: async () => {
+      const { iniciativa, turnoActual } = get()
+      const next = (turnoActual + 1) % iniciativa.length
+      set({ turnoActual: next })
+      if (next === 0) await get().tick_estados()
+      get().agregarLog('➡️ Turno: ' + iniciativa[next]?.nombre)
+    },
+
+    iniciarCombate: async () => {
+      await get().actualizarPartida({ estado: 'activa' })
+      set({ combateActivo: true })
+      await get().iniciarIniciativa()
+      get().agregarLog('⚔️ ¡Combate iniciado!')
+      get().toast('¡Combate iniciado!', 'warning')
+    },
+
+    finalizarCombate: async (xpPorJugador = 50) => {
+      const { partidaActiva, personajes } = get()
+      for (const uid of (partidaActiva?.jugadores || [])) {
+        const p = personajes.find(x => x.usuario_id === uid && x.partida_id === partidaActiva.id)
+        if (p) await get().ganarXP(p.id, xpPorJugador)
+      }
+      await get().actualizarPartida({ estado: 'pausada' })
+      await supabaseClient.from('enemigos_combate').delete().eq('partida_id', partidaActiva.id)
+      await supabaseClient.from('iniciativa').delete().eq('partida_id', partidaActiva.id)
+      set({ combateActivo: false, iniciativa: [], turnoActual: 0 })
+      get().agregarLog('🏆 Combate finalizado. +' + xpPorJugador + ' XP por jugador')
+      get().toast('Combate finalizado', 'success')
+    },
+
+    tirar: async ({ dados, modificador = 0, etiqueta = '', oculta = false, personajeNombre = '' }) => {
+      const { usuarioActual, tiradas, agregarLog } = get()
+      let total = 0
+      const resultados = []
+      for (const { cantidad, caras } of dados) {
+        const { total: t, resultados: r } = tirarDados(cantidad, caras)
+        total += t
+        resultados.push(...r.map(v => ({ valor: v, caras })))
+      }
+      total += modificador
+      const esCritico = dados.length === 1 && dados[0].caras === 20 && resultados[0]?.valor === 20
+      const esFallo = dados.length === 1 && dados[0].caras === 20 && resultados[0]?.valor === 1
+      const t = {
+        id: genId(), usuario_id: usuarioActual?.id, partida_id: get().partidaActiva?.id,
+        nombre: personajeNombre || usuarioActual?.nombre || 'DJ', etiqueta, dados, modificador,
+        resultados, total, es_critico: esCritico, es_fallo: esFallo, oculta, hora: hora()
+      }
+      await supabaseClient.from('tiradas').insert(t)
+      const nuevas = [t, ...tiradas].slice(0, 30)
+      set({ tiradas: nuevas })
+      if (!oculta) {
+        const dstr = dados.map(d => d.cantidad + 'd' + d.caras).join('+')
+        const mstr = modificador !== 0 ? (modificador > 0 ? '+' + modificador : '' + modificador) : ''
+        agregarLog('🎲 ' + t.nombre + ' → ' + dstr + mstr + ': **' + total + '**' + (esCritico ? ' 🌟' : esFallo ? ' 💀' : ''))
+      }
+      return t
+    },
+
+    agregarLog: async (msg, tipo = 'info') => {
+      const { partidaActiva, log } = get()
+      if (!partidaActiva) return
+      const entry = {
+        partida_id: partidaActiva.id, usuario_id: get().usuarioActual?.id,
+        mensaje: msg, tipo, hora: hora()
+      }
+      await supabaseClient.from('log_eventos').insert(entry)
+      set({ log: [{ id: genId(), mensaje: msg, tipo, hora: hora() }, ...log].slice(0, 150) })
+    },
+
+    abrirModal: (n, d = {}) => set({ modalActivo: { nombre: n, datos: d } }),
+    cerrarModal: () => set({ modalActivo: null }),
+    setVista: v => set({ vista: v }),
+  }
+})
+
+// ═══ components.jsx ═══
+
+
+function ToastContainer() {
+  const toasts = useStore(s => s.toasts)
+  const cerrarToast = useStore(s => s.cerrarToast)
+  const ico = {success:'✓',error:'✕',warning:'⚠',info:'ℹ'}
+  return (
+    <div className="toast-container">
+      {toasts.map(t=>(
+        <div key={t.id} className={`toast toast-${t.tipo}`} onClick={()=>cerrarToast(t.id)}>
+          <span style={{fontSize:15}}>{ico[t.tipo]||'ℹ'}</span>
+          <span style={{flex:1}}>{t.mensaje}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function Modal({titulo,children,onClose,size=''}) {
+  useEffect(()=>{
+    const h=e=>{if(e.key==='Escape')onClose?.()}
+    document.addEventListener('keydown',h); return()=>document.removeEventListener('keydown',h)
+  },[onClose])
+  return (
+    <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&onClose?.()}>
+      <div className={`modal ${size}`}>
+        <div className="flex items-center justify-between mb-3">
+          <div className="modal-title" style={{margin:0}}>{titulo}</div>
+          <button className="btn btn-ghost btn-icon btn-sm" onClick={onClose}>✕</button>
+        </div>
+        {children}
+      </div>
+    </div>
+  )
+}
+
+function HPBar({actual,max,showNumbers=true,height=8}) {
+  const pct=max>0?actual/max:0
+  const cls=pct>0.5?'hp-high':pct>0.25?'hp-mid':'hp-low'
+  return (
+    <div>
+      {showNumbers&&<div className="flex justify-between" style={{marginBottom:3}}>
+        <span style={{fontSize:11,color:'var(--text-muted)'}}>HP</span>
+        <span style={{fontSize:11}}>{actual}/{max}</span>
+      </div>}
+      <div className="hp-bar" style={{height}}>
+        <div className={`hp-fill ${cls}`} style={{width:`${Math.max(0,pct*100)}%`}}/>
+      </div>
+    </div>
+  )
+}
+
+function XPBar({xp,nivel}) {
+  const base=Math.floor(100*nivel*(nivel-1)/2)
+  const siguiente=Math.floor(100*(nivel+1)*nivel/2)
+  const pct=Math.min(1,(xp-base)/(siguiente-base||1))
+  return (
+    <div>
+      <div className="flex justify-between" style={{marginBottom:3}}>
+        <span style={{fontSize:11,color:'var(--text-muted)'}}>XP</span>
+        <span style={{fontSize:11,color:'var(--text-secondary)'}}>{xp} / {siguiente}</span>
+      </div>
+      <div className="xp-bar"><div className="xp-fill" style={{width:`${pct*100}%`}}/></div>
+    </div>
+  )
+}
+
+function DiceRoller({oculto=false,personajeNombre='',onResult}) {
+  const tirar=useStore(s=>s.tirar)
+  const toast=useStore(s=>s.toast)
+  const [sel,setSel]=useState([])
+  const [mod,setMod]=useState(0)
+  const [eta,setEta]=useState('')
+  const [rolling,setRolling]=useState(false)
+  const [last,setLast]=useState(null)
+
+  const add=caras=>{
+    const ex=sel.find(d=>d.caras===caras)
+    setSel(ex?sel.map(d=>d.caras===caras?{...d,cantidad:d.cantidad+1}:d):[...sel,{caras,cantidad:1}])
+  }
+  const clear=()=>{setSel([]);setMod(0);setEta('');setLast(null)}
+  const go=()=>{
+    if(!sel.length){toast('Elige al menos un dado','warning');return}
+    setRolling(true)
+    setTimeout(()=>{
+      const r=tirar({dados:sel,modificador:parseInt(mod)||0,etiqueta:eta,oculta:oculto,personajeNombre})
+      setLast(r); onResult?.(r); setRolling(false)
+    },300)
+  }
+
+  return (
+    <div>
+      <div style={{display:'flex',flexWrap:'wrap',gap:6,marginBottom:10}}>
+        {DADOS.map(c=>{
+          const cnt=sel.find(d=>d.caras===c)?.cantidad||0
+          return (
+            <button key={c} onClick={()=>add(c)}
+              className={`btn btn-sm ${cnt>0?'btn-primary':'btn-ghost'}`}
+              style={{position:'relative',minWidth:44}}>
+              d{c}
+              {cnt>0&&<span style={{position:'absolute',top:-6,right:-6,background:'var(--gold)',color:'#000',borderRadius:'50%',width:16,height:16,fontSize:10,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700}}>{cnt}</span>}
+            </button>
+          )
+        })}
+      </div>
+      {sel.length>0&&<div style={{fontSize:12,color:'var(--text-secondary)',marginBottom:8}}>
+        {sel.map(d=>`${d.cantidad}d${d.caras}`).join('+')}
+        {mod!==0&&(mod>0?` +${mod}`:` ${mod}`)}
+      </div>}
+      <div className="form-row" style={{marginBottom:10}}>
+        <div><label>Modificador</label><input type="number" value={mod} onChange={e=>setMod(e.target.value)}/></div>
+        <div><label>Etiqueta</label><input value={eta} onChange={e=>setEta(e.target.value)} placeholder="ej: Ataque espada"/></div>
+      </div>
+      <div className="flex gap-2" style={{marginBottom:last?12:0}}>
+        <button className="btn btn-primary flex-1" onClick={go} disabled={rolling}>
+          {rolling?'🎲 Tirando...':(oculto?'👁 Tirada oculta':'🎲 Tirar')}
+        </button>
+        {sel.length>0&&<button className="btn btn-ghost" onClick={clear}>Limpiar</button>}
+      </div>
+      {last&&(
+        <div className={`dice-result ${last.esCritico?'crit':last.esFallo?'fail':''}`} style={{marginTop:10}}>
+          <span style={{fontSize:24,fontWeight:700,color:last.esCritico?'var(--gold)':last.esFallo?'var(--red)':'var(--text-primary)'}}>
+            {last.total}
+          </span>
+          <div style={{flex:1}}>
+            <div style={{fontSize:11,color:'var(--text-muted)'}}>
+              [{last.resultados.map(r=>r.valor).join(', ')}]{last.modificador!==0?(last.modificador>0?` +${last.modificador}`:` ${last.modificador}`):''}
+            </div>
+            {last.esCritico&&<div style={{color:'var(--gold)',fontSize:12,fontWeight:600}}>🌟 ¡ÉXITO CRÍTICO!</div>}
+            {last.esFallo&&<div style={{color:'var(--red)',fontSize:12,fontWeight:600}}>💀 FALLO CRÍTICO</div>}
+            {last.etiqueta&&<div style={{fontSize:12,color:'var(--text-secondary)'}}>{last.etiqueta}</div>}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function QuickDice({personaje}) {
+  const tirar=useStore(s=>s.tirar)
+  const [last,setLast]=useState(null)
+  const go=(tipo)=>{
+    const cfg={
+      'ataque-str': {dados:[{cantidad:1,caras:20}],modificador:calcMod(personaje?.str||10),etiqueta:'Ataque (FUE)'},
+      'ataque-dex': {dados:[{cantidad:1,caras:20}],modificador:calcMod(personaje?.dex||10),etiqueta:'Ataque (DES)'},
+      'prueba':     {dados:[{cantidad:1,caras:20}],modificador:0,etiqueta:'Prueba'},
+      'iniciativa': {dados:[{cantidad:1,caras:20}],modificador:calcMod(personaje?.dex||10),etiqueta:'Iniciativa'},
+      'salvacion':  {dados:[{cantidad:1,caras:20}],modificador:calcMod(personaje?.con||10),etiqueta:'Salvación'},
+    }
+    const c=cfg[tipo]; if(!c) return
+    const r=tirar({...c,personajeNombre:personaje?.nombre})
+    setLast(r)
+  }
+  return (
+    <div>
+      <div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:8}}>
+        <button className="btn btn-sm btn-ghost" onClick={()=>go('ataque-str')}>⚔ ATK/FUE</button>
+        <button className="btn btn-sm btn-ghost" onClick={()=>go('ataque-dex')}>🏹 ATK/DES</button>
+        <button className="btn btn-sm btn-ghost" onClick={()=>go('prueba')}>🎯 Prueba</button>
+        <button className="btn btn-sm btn-ghost" onClick={()=>go('iniciativa')}>⚡ Iniciativa</button>
+        <button className="btn btn-sm btn-ghost" onClick={()=>go('salvacion')}>🛡 Salvación</button>
+      </div>
+      {last&&(
+        <div className={`dice-result ${last.esCritico?'crit':last.esFallo?'fail':''}`}>
+          <span style={{fontSize:20,fontWeight:700,color:last.esCritico?'var(--gold)':last.esFallo?'var(--red)':'var(--text-primary)'}}>{last.total}</span>
+          <div>
+            <div style={{fontSize:11,color:'var(--text-muted)'}}>[{last.resultados.map(r=>r.valor).join(',')}]{last.modificador!==0?(last.modificador>0?` +${last.modificador}`:` ${last.modificador}`):'  '}</div>
+            <div style={{fontSize:12,color:'var(--text-secondary)'}}>{last.etiqueta}</div>
+            {last.esCritico&&<div style={{color:'var(--gold)',fontSize:11}}>🌟 ¡Crítico!</div>}
+            {last.esFallo&&<div style={{color:'var(--red)',fontSize:11}}>💀 Fallo crítico</div>}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function TiradasHistorial({ocultas=false}) {
+  const tiradas=useStore(s=>s.tiradas)
+  const vis=ocultas?tiradas:tiradas.filter(t=>!t.oculta)
+  if(!vis.length) return <div className="empty-state"><p>Sin tiradas aún</p></div>
+  return (
+    <div style={{display:'flex',flexDirection:'column',gap:4}}>
+      {vis.map(t=>(
+        <div key={t.id} className={`dice-result ${t.esCritico?'crit':t.esFallo?'fail':''}`} style={{fontSize:12,padding:'5px 10px'}}>
+          {t.oculta&&<span style={{color:'var(--text-muted)'}}>🔒 </span>}
+          <span style={{color:'var(--text-muted)',fontSize:11}}>{t.hora}</span>
+          <span style={{color:'var(--purple-bright)',marginLeft:6}}>{t.nombre}</span>
+          <span style={{marginLeft:6,color:'var(--text-secondary)'}}>{t.etiqueta||t.dados.map(d=>`${d.cantidad}d${d.caras}`).join('+')}:</span>
+          <span style={{marginLeft:6,fontWeight:700,color:t.esCritico?'var(--gold)':t.esFallo?'var(--red)':'var(--text-primary)'}}>{t.total}</span>
+          {t.esCritico&&<span style={{color:'var(--gold)'}}> 🌟</span>}
+          {t.esFallo&&<span style={{color:'var(--red)'}}> 💀</span>}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function LogPartida() {
+  const log=useStore(s=>s.log)
+  return (
+    <div style={{maxHeight:260,overflowY:'auto'}}>
+      {!log.length?<div className="empty-state"><p>Log vacío</p></div>:
+        log.map(e=>(
+          <div key={e.id} className="log-entry">
+            <span className="log-time">{e.hora}</span>
+            <span dangerouslySetInnerHTML={{__html:e.mensaje.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')}}/>
+          </div>
+        ))
+      }
+    </div>
+  )
+}
+
+function Confirm({mensaje,onConfirm,onCancel}) {
+  return (
+    <Modal titulo="Confirmar acción" onClose={onCancel} size="modal-sm">
+      <p style={{marginBottom:16,color:'var(--text-secondary)'}}>{mensaje}</p>
+      <div className="modal-actions">
+        <button className="btn btn-ghost" onClick={onCancel}>Cancelar</button>
+        <button className="btn btn-danger" onClick={onConfirm}>Confirmar</button>
+      </div>
+    </Modal>
+  )
+}
+
+function NumberInput({value,onChange,min=0,max=9999,label}) {
+  return (
+    <div>
+      {label&&<label>{label}</label>}
+      <div className="num-input-wrap">
+        <button className="btn btn-ghost btn-sm btn-icon" onClick={()=>onChange(Math.max(min,value-1))}>−</button>
+        <input type="number" value={value} min={min} max={max}
+          onChange={e=>onChange(Math.max(min,Math.min(max,parseInt(e.target.value)||0)))}/>
+        <button className="btn btn-ghost btn-sm btn-icon" onClick={()=>onChange(Math.min(max,value+1))}>+</button>
+      </div>
+    </div>
+  )
+}
+
+function Portrait({src,nombre,size=48,emoji='⚔️'}) {
+  const [err,setErr]=useState(false)
+  if(src&&!err) return (
+    <img src={src} alt={nombre} onError={()=>setErr(true)}
+      style={{width:size,height:size,borderRadius:6,objectFit:'cover',flexShrink:0}}/>
+  )
+  return (
+    <div style={{width:size,height:size,borderRadius:6,background:'var(--purple-dim)',display:'flex',
+      alignItems:'center',justifyContent:'center',fontSize:size*0.45,flexShrink:0}}>
+      {emoji}
+    </div>
+  )
+}
+
+function StatGrid({personaje,editable=false,onChange}) {
+  const stats=[
+    {key:'str',label:'FUE'},{key:'dex',label:'DES'},{key:'con',label:'CON'},
+    {key:'int',label:'INT'},{key:'wis',label:'SAB'},{key:'cha',label:'CAR'},
+  ]
+  return (
+    <div className="grid-6">
+      {stats.map(({key,label})=>(
+        <div key={key} className="stat-box">
+          <div className="stat-name">{label}</div>
+          {editable?(
+            <input type="number" min={1} max={20} value={personaje[key]||10}
+              onChange={e=>onChange?.(key,Math.max(1,Math.min(20,parseInt(e.target.value)||10)))}
+              style={{textAlign:'center',width:'100%',background:'transparent',border:'none',
+                fontSize:20,fontWeight:700,color:'var(--text-primary)',padding:0}}/>
+          ):<div className="stat-value">{personaje[key]||10}</div>}
+          <div className="stat-mod">{modStr(personaje[key]||10)}</div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function BadgeAfinidad({afinidad}) {
+  const cls={Hostil:'badge-red',Desconfiado:'badge-orange',Neutral:'badge-gray',Amistoso:'badge-blue',Aliado:'badge-green'}
+  return <span className={`badge ${cls[afinidad]||'badge-gray'}`}>{afinidad}</span>
+}
+
+function BadgeTipoEnemigo({tipo}) {
+  const m={normal:['badge-gray','Normal'],mini:['badge-orange','Mini-Jefe'],boss:['badge-red','Jefe Final']}
+  const [c,l]=m[tipo]||['badge-gray',tipo]
+  return <span className={`badge ${c}`}>{l}</span>
+}
+
+function BadgeEscena({tipo}) {
+  const m={'Exploración':'badge-blue','Combate':'badge-red','Diálogo':'badge-purple','Descanso':'badge-green'}
+  return <span className={`badge ${m[tipo]||'badge-gray'}`}>{tipo}</span>
+}
+
+function EstadoChip({estado,onRemove}) {
+  const tp=estado.tipo==='positivo'?'badge-green':'badge-red'
+  return (
+    <span className={`badge ${tp}`} style={{display:'inline-flex',alignItems:'center',gap:4,margin:'2px'}}>
+      {estado.icono} {estado.nombre}
+      {estado.turnosRestantes&&<span style={{opacity:.7,fontSize:9}}>({estado.turnosRestantes}t)</span>}
+      {onRemove&&<span onClick={onRemove} style={{cursor:'pointer',marginLeft:2,opacity:.7}}>✕</span>}
+    </span>
+  )
+}
+
+function SeccionHeader({children}) {
+  return (
+    <div className="section-header">{children}</div>
+  )
+}
+
+
+// ═══ PantallaAuth.jsx ═══
+
+
+function PantallaAuth() {
+  const [modo, setModo] = useState('login')
+  const login    = useStore(s => s.login)
+  const registrar= useStore(s => s.registrar)
+  const [email,    setEmail]    = useState('')
+  const [password, setPassword] = useState('')
+  const [nombre,   setNombre]   = useState('')
+  const [rol,      setRol]      = useState('jugador')
+  const [loading,  setLoading]  = useState(false)
+
+  const handleSubmit = e => {
+    e.preventDefault()
+    setLoading(true)
+    setTimeout(() => {
+      if (modo === 'login') login(email, password, rol)
+      else { if (nombre.trim()) registrar(email, password, rol, nombre) }
+      setLoading(false)
+    }, 250)
+  }
+
+  return (
+    <div style={{minHeight:'100vh',display:'flex',flexDirection:'column',alignItems:'center',
+      justifyContent:'center',padding:16,background:'var(--bg-primary)'}}>
+
+      {/* Logo */}
+      <div style={{textAlign:'center',marginBottom:32}}>
+        <div style={{fontSize:52,marginBottom:8}}>⚔️</div>
+        <h1 style={{fontSize:28,fontWeight:700,color:'var(--gold)',letterSpacing:3,margin:0}}>
+          CHASING ADVENTURE
+        </h1>
+        <p style={{color:'var(--text-muted)',fontSize:13,marginTop:6}}>
+          Sistema de gestión de partidas de rol · Gratuito
+        </p>
+      </div>
+
+      {/* Tarjeta */}
+      <div className="card" style={{width:'100%',maxWidth:420}}>
+        <div className="tabs" style={{marginBottom:16}}>
+          <button className={`tab ${modo==='login'?'active':''}`} onClick={()=>setModo('login')}>
+            Iniciar sesión
+          </button>
+          <button className={`tab ${modo==='registro'?'active':''}`} onClick={()=>setModo('registro')}>
+            Crear cuenta
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit}>
+          {modo==='registro' && (
+            <div className="form-group">
+              <label>Nombre de usuario</label>
+              <input type="text" value={nombre} onChange={e=>setNombre(e.target.value)}
+                placeholder="Tu nombre en la aventura" required autoFocus/>
+            </div>
+          )}
+          <div className="form-group">
+            <label>Email</label>
+            <input type="email" value={email} onChange={e=>setEmail(e.target.value)}
+              placeholder="tu@email.com" required autoFocus={modo==='login'}/>
+          </div>
+          <div className="form-group">
+            <label>Contraseña</label>
+            <input type="password" value={password} onChange={e=>setPassword(e.target.value)}
+              placeholder="••••••••" required minLength={4}/>
+          </div>
+
+          {/* Selector de rol */}
+          <div className="form-group">
+            <label>Rol</label>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginTop:4}}>
+              {[
+                {id:'dj',     emoji:'🎭', titulo:'Director de Juego', sub:'Crea y dirige partidas'},
+                {id:'jugador',emoji:'🧙', titulo:'Jugador',           sub:'Vive la aventura'},
+              ].map(r => (
+                <button key={r.id} type="button" onClick={()=>setRol(r.id)}
+                  className={`btn ${rol===r.id?(r.id==='dj'?'btn-gold':'btn-primary'):'btn-ghost'}`}
+                  style={{flexDirection:'column',padding:'12px 8px',height:'auto',gap:4}}>
+                  <span style={{fontSize:24}}>{r.emoji}</span>
+                  <span style={{fontSize:12,fontWeight:700}}>{r.titulo}</span>
+                  <span style={{fontSize:10,fontWeight:400,opacity:.75}}>{r.sub}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <button type="submit" className="btn btn-primary" style={{width:'100%',marginTop:4}} disabled={loading}>
+            {loading ? '⏳ Cargando...' : modo==='login' ? '→ Entrar' : '✨ Crear cuenta'}
+          </button>
+        </form>
+
+        <div style={{marginTop:12,padding:10,background:'var(--bg-secondary)',borderRadius:'var(--radius)',
+          fontSize:12,color:'var(--text-muted)'}}>
+          💡 <strong style={{color:'var(--text-secondary)'}}>Sin servidor:</strong> Todos los datos se guardan
+          localmente en tu navegador. Comparte el código de partida con tus jugadores en persona.
+        </div>
+      </div>
+
+      <p style={{marginTop:20,fontSize:11,color:'var(--text-muted)',textAlign:'center'}}>
+        Sistema propio "Chasing Adventure" · Sin licencias externas · Código abierto
+      </p>
+    </div>
+  )
+}
+
+
+// ═══ PantallaLobby.jsx ═══
+
+
+function PantallaLobby() {
+  const usuarioActual = useStore(s => s.usuarioActual)
+  const partidas      = useStore(s => s.partidas)
+  const logout        = useStore(s => s.logout)
+  const crearPartida  = useStore(s => s.crearPartida)
+  const unirseAPartida= useStore(s => s.unirseAPartida)
+  const cargarPartida = useStore(s => s.cargarPartida)
+
+  const [nombrePartida, setNombrePartida] = useState('')
+  const [codigo,  setCodigo]  = useState('')
+  const [creando, setCreando] = useState(false)
+
+  const esDJ = usuarioActual?.rol === 'dj'
+
+  const misPartidas = esDJ
+    ? partidas.filter(p => p.djId === usuarioActual.id)
+    : partidas.filter(p => p.jugadores?.includes(usuarioActual.id))
+
+  const handleCrear = e => {
+    e.preventDefault()
+    if (!nombrePartida.trim()) return
+    crearPartida(nombrePartida.trim())
+    setNombrePartida(''); setCreando(false)
+  }
+  const handleUnirse = e => {
+    e.preventDefault()
+    if (!codigo.trim()) return
+    unirseAPartida(codigo.trim())
+    setCodigo('')
+  }
+
+  const estadoColor = {lobby:'var(--blue)',activa:'var(--green)',pausada:'var(--orange)',finalizada:'var(--text-muted)'}
+  const estadoLabel = {lobby:'⏳ En espera',activa:'⚔️ En curso',pausada:'⏸ Pausada',finalizada:'✓ Finalizada'}
+
+  return (
+    <div style={{minHeight:'100vh',background:'var(--bg-primary)'}}>
+      {/* Header */}
+      <header style={{background:'var(--bg-secondary)',borderBottom:'1px solid var(--border)',
+        padding:'12px 20px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+        <div style={{display:'flex',alignItems:'center',gap:12}}>
+          <span style={{fontSize:24}}>⚔️</span>
+          <div>
+            <div style={{fontWeight:700,fontSize:16,color:'var(--gold)'}}>Chasing Adventure</div>
+            <div style={{fontSize:12,color:'var(--text-muted)'}}>
+              {esDJ?'🎭 Director de Juego':'🧙 Jugador'} · {usuarioActual?.nombre}
+            </div>
+          </div>
+        </div>
+        <button className="btn btn-ghost btn-sm" onClick={logout}>Cerrar sesión</button>
+      </header>
+
+      <div style={{maxWidth:800,margin:'0 auto',padding:'24px 16px'}}>
+
+        {/* Acción principal */}
+        {esDJ ? (
+          <div className="card" style={{marginBottom:24}}>
+            <div className="card-title">🎲 Nueva Partida</div>
+            {!creando ? (
+              <button className="btn btn-gold" style={{width:'100%'}} onClick={()=>setCreando(true)}>
+                + Crear nueva partida
+              </button>
+            ) : (
+              <form onSubmit={handleCrear}>
+                <div className="form-group">
+                  <label>Nombre de la partida</label>
+                  <input type="text" value={nombrePartida} onChange={e=>setNombrePartida(e.target.value)}
+                    placeholder="ej: La Maldición del Castillo Draken" autoFocus required/>
+                </div>
+                <div className="flex gap-2">
+                  <button type="submit" className="btn btn-gold flex-1">Crear</button>
+                  <button type="button" className="btn btn-ghost" onClick={()=>setCreando(false)}>Cancelar</button>
+                </div>
+              </form>
+            )}
+          </div>
+        ) : (
+          <div className="card" style={{marginBottom:24}}>
+            <div className="card-title">🚪 Unirse a partida</div>
+            <form onSubmit={handleUnirse}>
+              <div className="form-group">
+                <label>Código de partida (6 caracteres)</label>
+                <input type="text" value={codigo} onChange={e=>setCodigo(e.target.value.toUpperCase())}
+                  placeholder="ej: X7K9P2" maxLength={6}
+                  style={{letterSpacing:8,textAlign:'center',fontSize:22,fontWeight:700}}/>
+              </div>
+              <button type="submit" className="btn btn-primary" style={{width:'100%'}}>
+                Unirse →
+              </button>
+            </form>
+          </div>
+        )}
+
+        {/* Lista de partidas */}
+        <div className="section-header">
+          {esDJ ? 'Mis partidas' : 'Partidas en las que participas'}
+        </div>
+
+        {!misPartidas.length ? (
+          <div className="empty-state">
+            <div className="icon">{esDJ?'🎭':'🧙'}</div>
+            <p>{esDJ?'Aún no has creado ninguna partida':'Aún no te has unido a ninguna partida'}</p>
+          </div>
+        ) : (
+          <div style={{display:'flex',flexDirection:'column',gap:10}}>
+            {[...misPartidas].reverse().map(partida => (
+              <div key={partida.id} className="card" style={{cursor:'pointer'}}
+                onClick={()=>cargarPartida(partida.id)}>
+                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontWeight:600,fontSize:15,marginBottom:4}}>{partida.nombre}</div>
+                    <div style={{display:'flex',gap:12,fontSize:12,color:'var(--text-secondary)',flexWrap:'wrap'}}>
+                      {esDJ && (
+                        <>
+                          <span style={{fontFamily:'monospace',letterSpacing:3,color:'var(--gold)',fontWeight:700}}>
+                            {partida.codigo}
+                          </span>
+                          <span>👥 {partida.jugadores?.length||0} jugadores</span>
+                        </>
+                      )}
+                      <span>📅 {new Date(partida.creadaEn).toLocaleDateString('es')}</span>
+                    </div>
+                  </div>
+                  <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:6,marginLeft:12}}>
+                    <span style={{fontSize:12,fontWeight:600,color:estadoColor[partida.estado]}}>
+                      {estadoLabel[partida.estado]}
+                    </span>
+                    <button className="btn btn-primary btn-sm"
+                      onClick={e=>{e.stopPropagation();cargarPartida(partida.id)}}>
+                      {esDJ?'Dirigir →':'Entrar →'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Tip */}
+        <div style={{marginTop:24,padding:12,background:'var(--bg-secondary)',borderRadius:'var(--radius)',
+          fontSize:12,color:'var(--text-muted)'}}>
+          {esDJ
+            ? '💡 Crea una partida y comparte el código de 6 caracteres con tus jugadores presencialmente o por WhatsApp.'
+            : '💡 Pide el código de 6 caracteres al Director de Juego para unirte a su partida.'}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+
+// ═══ VistaDJ.jsx ═══
+
+
+// ─── DJ principal ─────────────────────────────────────────────────────────────
+function VistaDJ() {
+  const [tab, setTab] = useState('escena')
+  const usuarioActual = useStore(s => s.usuarioActual)
+  const partidaActiva = useStore(s => s.partidaActiva)
+  const combateActivo = useStore(s => s.combateActivo)
+  const logout = useStore(s => s.logout)
+  const setVista = useStore(s => s.setVista)
+  const iniciarCombate = useStore(s => s.iniciarCombate)
+  const finalizarCombate = useStore(s => s.finalizarCombate)
+  const [showXP, setShowXP] = useState(false)
+  const [xpVal, setXpVal] = useState(50)
+
+  if (!partidaActiva) return null
+
+  const TABS = [
+    {id:'escena',   label:'🗺 Escena'},
+    {id:'jugadores',label:'👥 Jugadores'},
+    {id:'enemigos', label:'💀 Enemigos'},
+    {id:'pnj',      label:'🗣 PNJs'},
+    {id:'relaciones',label:'🔗 Relaciones'},
+    {id:'armas',    label:'⚔️ Armas'},
+    {id:'estados',  label:'✨ Estados'},
+    {id:'iniciativa',label:'⚡ Turno'},
+    {id:'dados',    label:'🎲 Dados'},
+    {id:'log',      label:'📜 Log'},
+  ]
+
+  return (
+    <div style={{minHeight:'100vh',display:'flex',flexDirection:'column',background:'var(--bg-primary)'}}>
+      {/* Header */}
+      <header style={{background:'var(--bg-secondary)',borderBottom:'1px solid var(--border)',padding:'10px 16px',display:'flex',alignItems:'center',gap:12,flexWrap:'wrap'}}>
+        <button className="btn btn-ghost btn-sm btn-icon" onClick={()=>setVista('lobby')}>←</button>
+        <div style={{flex:1}}>
+          <div style={{fontWeight:700,color:'var(--gold)',fontSize:15}}>🎭 {partidaActiva.nombre}</div>
+          <div style={{fontSize:11,color:'var(--text-muted)'}}>Código: <strong style={{letterSpacing:3,color:'var(--text-secondary)'}}>{partidaActiva.codigo}</strong></div>
+        </div>
+        {combateActivo
+          ? <button className="btn btn-danger btn-sm" onClick={()=>setShowXP(true)}>🏁 Fin Combate</button>
+          : <button className="btn btn-gold btn-sm" onClick={iniciarCombate}>⚔️ Iniciar Combate</button>
+        }
+        <button className="btn btn-ghost btn-sm" onClick={logout}>✕</button>
+      </header>
+
+      {/* Tabs */}
+      <div style={{background:'var(--bg-secondary)',borderBottom:'1px solid var(--border)',padding:'0 16px',display:'flex',overflowX:'auto',gap:2}}>
+        {TABS.map(t=>(
+          <button key={t.id} onClick={()=>setTab(t.id)}
+            style={{padding:'10px 14px',background:'none',border:'none',cursor:'pointer',fontSize:13,whiteSpace:'nowrap',fontFamily:'var(--font)',
+              color:tab===t.id?'var(--gold)':'var(--text-secondary)',
+              borderBottom:tab===t.id?'2px solid var(--gold)':'2px solid transparent',transition:'color 0.15s'}}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Contenido */}
+      <div style={{flex:1,padding:16,overflowY:'auto'}}>
+        {tab==='escena'    && <TabEscena/>}
+        {tab==='jugadores' && <TabJugadores/>}
+        {tab==='enemigos'  && <TabEnemigos/>}
+        {tab==='pnj'       && <TabPNJ/>}
+        {tab==='relaciones'&& <TabRelaciones/>}
+        {tab==='armas'     && <TabArmas/>}
+        {tab==='estados'   && <TabEstadosDJ/>}
+        {tab==='iniciativa'&& <TabIniciativa/>}
+        {tab==='dados'     && <TabDadosDJ/>}
+        {tab==='log'       && <><div className="card-title">📜 Registro</div><LogPartida/></>}
+      </div>
+
+      {showXP&&(
+        <Modal titulo="🏆 Finalizar combate" onClose={()=>setShowXP(false)} size="modal-sm">
+          <p style={{marginBottom:12,color:'var(--text-secondary)'}}>XP para cada jugador:</p>
+          <NumberInput value={xpVal} onChange={setXpVal} min={0} max={9999} label="XP por jugador"/>
+          <div className="modal-actions">
+            <button className="btn btn-ghost" onClick={()=>setShowXP(false)}>Cancelar</button>
+            <button className="btn btn-success" onClick={()=>{finalizarCombate(xpVal);setShowXP(false)}}>✓ Confirmar</button>
+          </div>
+        </Modal>
+      )}
+    </div>
+  )
+}
+
+// ─── Tab Escena ───────────────────────────────────────────────────────────────
+function TabEscena() {
+  const {partidaActiva,crearEscena,activarEscena,eliminarEscena,actualizarPartida}=useStore(s=>({
+    partidaActiva:s.partidaActiva,crearEscena:s.crearEscena,
+    activarEscena:s.activarEscena,eliminarEscena:s.eliminarEscena,
+    actualizarPartida:s.actualizarPartida,
+  }))
+  const [showForm,setShowForm]=useState(false)
+  const [editId,setEditId]=useState(null)
+  const [form,setForm]=useState({titulo:'',descripcion:'',imagen:'',tipo:'Exploración'})
+  const [del,setDel]=useState(null)
+  const escenas=partidaActiva?.escenas||[]
+  const actual=escenas.find(e=>e.id===partidaActiva?.escenaActualId)
+
+  const reset=()=>setForm({titulo:'',descripcion:'',imagen:'',tipo:'Exploración'})
+  const save=()=>{
+    if(!form.titulo.trim()) return
+    if(editId){
+      actualizarPartida({escenas:escenas.map(e=>e.id===editId?{...e,...form}:e)})
+    } else { crearEscena(form) }
+    setShowForm(false); setEditId(null); reset()
+  }
+  const edit=e=>{setForm({titulo:e.titulo,descripcion:e.descripcion,imagen:e.imagen||'',tipo:e.tipo});setEditId(e.id);setShowForm(true)}
+
+  return (
+    <div>
+      {actual&&(
+        <div className="card" style={{marginBottom:16,borderLeft:'3px solid var(--gold)'}}>
+          {actual.imagen&&<img src={actual.imagen} alt="" onError={e=>e.target.style.display='none'}
+            style={{width:'100%',height:140,objectFit:'cover',borderRadius:6,marginBottom:10}}/>}
+          <div style={{display:'flex',gap:8,alignItems:'center',marginBottom:6}}>
+            <BadgeEscena tipo={actual.tipo}/>
+            <span style={{fontWeight:700,fontSize:16}}>{actual.titulo}</span>
+            <div className="pulse-dot" style={{marginLeft:'auto'}}/>
+          </div>
+          <p style={{fontSize:13,color:'var(--text-secondary)',lineHeight:1.7}}>{actual.descripcion}</p>
+        </div>
+      )}
+      <div className="flex justify-between items-center mb-3">
+        <div className="section-header" style={{margin:0}}>Escenas preparadas ({escenas.length})</div>
+        <button className="btn btn-primary btn-sm" onClick={()=>{reset();setEditId(null);setShowForm(true)}}>+ Nueva</button>
+      </div>
+      {!escenas.length?<div className="empty-state"><div className="icon">🗺</div><p>Sin escenas preparadas</p></div>:(
+        <div style={{display:'flex',flexDirection:'column',gap:8}}>
+          {escenas.map(esc=>(
+            <div key={esc.id} className="card" style={{padding:'10px 12px',borderLeft:`3px solid ${esc.id===actual?.id?'var(--gold)':'transparent'}`}}>
+              <div className="flex items-center gap-2">
+                <BadgeEscena tipo={esc.tipo}/>
+                <span style={{flex:1,fontWeight:500,fontSize:13}}>{esc.titulo}</span>
+                <button className="btn btn-success btn-sm" onClick={()=>activarEscena(esc.id)}>▶ Activar</button>
+                <button className="btn btn-ghost btn-sm btn-icon" onClick={()=>edit(esc)}>✏</button>
+                <button className="btn btn-danger btn-sm btn-icon" onClick={()=>setDel(esc.id)}>✕</button>
+              </div>
+              {esc.descripcion&&<p style={{fontSize:12,color:'var(--text-muted)',marginTop:6}}>{esc.descripcion.slice(0,100)}{esc.descripcion.length>100?'…':''}</p>}
+            </div>
+          ))}
+        </div>
+      )}
+      {showForm&&(
+        <Modal titulo={editId?'✏ Editar escena':'+ Nueva escena'} onClose={()=>{setShowForm(false);setEditId(null);reset()}}>
+          <div className="form-group"><label>Título</label><input value={form.titulo} onChange={e=>setForm(f=>({...f,titulo:e.target.value}))} autoFocus/></div>
+          <div className="form-group"><label>Descripción (visible para jugadores)</label><textarea rows={4} value={form.descripcion} onChange={e=>setForm(f=>({...f,descripcion:e.target.value}))} style={{resize:'vertical'}}/></div>
+          <div className="form-group"><label>URL imagen de fondo</label><input value={form.imagen} onChange={e=>setForm(f=>({...f,imagen:e.target.value}))} placeholder="https://..."/></div>
+          <div className="form-group"><label>Tipo</label><select value={form.tipo} onChange={e=>setForm(f=>({...f,tipo:e.target.value}))}>{TIPOS_ESCENA.map(t=><option key={t}>{t}</option>)}</select></div>
+          <div className="modal-actions">
+            <button className="btn btn-ghost" onClick={()=>{setShowForm(false);setEditId(null);reset()}}>Cancelar</button>
+            <button className="btn btn-primary" onClick={save}>Guardar</button>
+          </div>
+        </Modal>
+      )}
+      {del&&<Confirm mensaje="¿Eliminar esta escena?" onConfirm={()=>{eliminarEscena(del);setDel(null)}} onCancel={()=>setDel(null)}/>}
+    </div>
+  )
+}
+
+// ─── Tab Jugadores ────────────────────────────────────────────────────────────
+function TabJugadores() {
+  const {partidaActiva,personajes,usuarios,clases,estadosDisponibles,
+    aplicarDañoPersonaje,curarPersonaje,ganarXP,actualizarPersonaje,
+    aplicarEstado,quitarEstado,transferirObjeto,agregarAlInventario,quitarDelInventario}=useStore(s=>s)
+  const [editId,setEditId]=useState(null)
+  const [transferModal,setTransferModal]=useState(null)
+
+  const jugadores=(partidaActiva?.jugadores||[]).map(id=>({
+    usuario:usuarios.find(u=>u.id===id),
+    personaje:personajes.find(p=>p.usuarioId===id&&p.gameId===partidaActiva.id)
+  })).filter(j=>j.usuario)
+
+  return (
+    <div>
+      <div className="section-header">Jugadores ({jugadores.length}) · Código: <strong style={{color:'var(--gold)',letterSpacing:3}}>{partidaActiva?.codigo}</strong></div>
+      {!jugadores.length?<div className="empty-state"><div className="icon">👥</div><p>Ningún jugador se ha unido todavía</p></div>:(
+        <div style={{display:'flex',flexDirection:'column',gap:14}}>
+          {jugadores.map(({usuario,personaje})=>(
+            <JugadorCardDJ key={usuario.id} usuario={usuario} personaje={personaje} clases={clases}
+              estadosDisponibles={estadosDisponibles}
+              onDaño={(pid,c)=>aplicarDañoPersonaje(pid,c)}
+              onCura={(pid,c)=>curarPersonaje(pid,c)}
+              onXP={(pid,c)=>ganarXP(pid,c)}
+              onUpdate={(pid,cambios)=>actualizarPersonaje(pid,cambios)}
+              onAplicarEstado={(pid,eid)=>aplicarEstado(pid,eid)}
+              onQuitarEstado={(pid,eid)=>quitarEstado(pid,eid)}
+              onTransferir={(pid)=>setTransferModal(pid)}
+              onAddItem={(pid,item)=>agregarAlInventario(pid,item)}
+              onRemoveItem={(pid,iid)=>quitarDelInventario(pid,iid)}
+              todosPersonajes={personajes.filter(p=>p.gameId===partidaActiva.id)}
+            />
+          ))}
+        </div>
+      )}
+      {transferModal&&(
+        <TransferModal fromPid={transferModal} personajes={personajes.filter(p=>p.gameId===partidaActiva.id)}
+          onTransfer={(fromPid,toPid,iid,cant)=>{transferirObjeto(fromPid,toPid,iid,cant);setTransferModal(null)}}
+          onClose={()=>setTransferModal(null)}/>
+      )}
+    </div>
+  )
+}
+
+function JugadorCardDJ({usuario,personaje,clases,estadosDisponibles,onDaño,onCura,onXP,onUpdate,onAplicarEstado,onQuitarEstado,onTransferir,onAddItem,onRemoveItem,todosPersonajes}) {
+  const [exp,setExp]=useState(false)
+  const [subTab,setSubTab]=useState('stats')
+  const [cant,setCant]=useState(0)
+  const [xp,setXp]=useState(0)
+  const clase=clases.find(c=>c.id===personaje?.claseId)
+
+  if(!personaje) return (
+    <div className="card" style={{padding:'10px 12px'}}>
+      <div className="flex gap-2 items-center">
+        <Portrait nombre={usuario.nombre} size={36}/>
+        <div><div style={{fontWeight:600}}>{usuario.nombre}</div><div style={{fontSize:12,color:'var(--text-muted)'}}>Sin personaje</div></div>
+      </div>
+    </div>
+  )
+
+  return (
+    <div className="card">
+      <div className="flex gap-2 items-center" style={{marginBottom:8}}>
+        <Portrait src={personaje.retrato} nombre={personaje.nombre} size={44}/>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontWeight:600,fontSize:14}}>{personaje.nombre}</div>
+          <div style={{fontSize:12,color:'var(--text-muted)'}}>{clase?.nombre} · Nv.{personaje.nivel} · {usuario.nombre}</div>
+          {(personaje.estados||[]).length>0&&(
+            <div style={{display:'flex',flexWrap:'wrap',gap:2,marginTop:4}}>
+              {personaje.estados.map(e=><EstadoChip key={e.id} estado={e} onRemove={()=>onQuitarEstado(personaje.id,e.id)}/>)}
+            </div>
+          )}
+        </div>
+        <div style={{textAlign:'right'}}>
+          <div style={{fontWeight:700,fontSize:15}}>{personaje.vidaActual}<span style={{color:'var(--text-muted)',fontWeight:400}}>/{personaje.vidaMax}</span></div>
+          <div style={{fontSize:11,color:'var(--text-muted)'}}>🛡 {personaje.armadura}</div>
+        </div>
+        <button className="btn btn-ghost btn-sm btn-icon" onClick={()=>setExp(!exp)}>{exp?'▲':'▼'}</button>
+      </div>
+      <HPBar actual={personaje.vidaActual} max={personaje.vidaMax} showNumbers={false}/>
+
+      {exp&&(
+        <div style={{marginTop:12}}>
+          <div className="tabs">
+            <button className={`tab ${subTab==='stats'?'active':''}`} onClick={()=>setSubTab('stats')}>Stats</button>
+            <button className={`tab ${subTab==='inv'?'active':''}`} onClick={()=>setSubTab('inv')}>Inventario</button>
+            <button className={`tab ${subTab==='estados'?'active':''}`} onClick={()=>setSubTab('estados')}>Estados</button>
+            <button className={`tab ${subTab==='acciones'?'active':''}`} onClick={()=>setSubTab('acciones')}>Acciones DJ</button>
+          </div>
+
+          {subTab==='stats'&&(
+            <>
+              <StatGrid personaje={personaje}/>
+              <div style={{marginTop:10}}>
+                <XPBar xp={personaje.xp} nivel={personaje.nivel}/>
+                <div style={{fontSize:12,color:'var(--text-secondary)',marginTop:4}}>
+                  🪙 {personaje.oro} oro · 🛡 {personaje.armadura} armadura
+                  {personaje.puntosPendientes>0&&<span style={{color:'var(--gold)',marginLeft:8}}>✨ {personaje.puntosPendientes} pts pendientes</span>}
+                </div>
+              </div>
+              {/* Recursos de clase */}
+              {Object.entries(personaje.recursosActuales||{}).map(([nombre,val])=>{
+                const rdef=(clase?.recursosEspeciales||[]).find(r=>r.nombre===nombre)
+                return (
+                  <div key={nombre} style={{marginTop:8,background:'var(--bg-secondary)',borderRadius:'var(--radius)',padding:8}}>
+                    <div className="flex justify-between" style={{marginBottom:4}}>
+                      <span style={{fontSize:12}}>{rdef?.icono||'💠'} {nombre}</span>
+                      <span style={{fontSize:12,fontWeight:700}}>{val}/{rdef?.max||10}</span>
+                    </div>
+                    <div className="hp-bar" style={{height:6}}>
+                      <div style={{width:`${(val/(rdef?.max||10))*100}%`,height:'100%',borderRadius:3,background:'var(--purple-bright)',transition:'width .3s'}}/>
+                    </div>
+                    <div className="flex gap-2" style={{marginTop:6}}>
+                      <button className="btn btn-ghost btn-sm" onClick={()=>onUpdate(personaje.id,{recursosActuales:{...personaje.recursosActuales,[nombre]:Math.max(0,val-1)}})}>−1</button>
+                      <button className="btn btn-ghost btn-sm" onClick={()=>onUpdate(personaje.id,{recursosActuales:{...personaje.recursosActuales,[nombre]:Math.min(rdef?.max||10,val+1)}})}>+1</button>
+                      <button className="btn btn-ghost btn-sm" onClick={()=>onUpdate(personaje.id,{recursosActuales:{...personaje.recursosActuales,[nombre]:rdef?.max||10}})}>Max</button>
+                    </div>
+                  </div>
+                )
+              })}
+            </>
+          )}
+
+          {subTab==='inv'&&(
+            <InventarioDJ personaje={personaje} onAdd={(item)=>onAddItem(personaje.id,item)}
+              onRemove={(iid)=>onRemoveItem(personaje.id,iid)} onTransfer={()=>onTransferir(personaje.id)}/>
+          )}
+
+          {subTab==='estados'&&(
+            <EstadosPanel personaje={personaje} estadosDisponibles={estadosDisponibles}
+              onAplicar={(eid)=>onAplicarEstado(personaje.id,eid)}
+              onQuitar={(eid)=>onQuitarEstado(personaje.id,eid)}/>
+          )}
+
+          {subTab==='acciones'&&(
+            <div style={{display:'flex',flexDirection:'column',gap:10}}>
+              <div style={{background:'var(--bg-secondary)',borderRadius:'var(--radius)',padding:10}}>
+                <div style={{fontSize:11,color:'var(--text-muted)',marginBottom:8,fontWeight:700,textTransform:'uppercase',letterSpacing:1}}>HP</div>
+                <div className="flex gap-2 items-center" style={{flexWrap:'wrap'}}>
+                  <input type="number" min={0} value={cant} onChange={e=>setCant(parseInt(e.target.value)||0)} style={{width:72}} placeholder="Cant."/>
+                  <button className="btn btn-danger btn-sm" onClick={()=>{onDaño(personaje.id,cant);setCant(0)}}>⚔ Dañar</button>
+                  <button className="btn btn-success btn-sm" onClick={()=>{onCura(personaje.id,cant);setCant(0)}}>💚 Curar</button>
+                  <button className="btn btn-ghost btn-sm" onClick={()=>onUpdate(personaje.id,{vidaActual:personaje.vidaMax})}>❤ Full HP</button>
+                </div>
+              </div>
+              <div style={{background:'var(--bg-secondary)',borderRadius:'var(--radius)',padding:10}}>
+                <div style={{fontSize:11,color:'var(--text-muted)',marginBottom:8,fontWeight:700,textTransform:'uppercase',letterSpacing:1}}>XP y Nivel</div>
+                <div className="flex gap-2 items-center" style={{flexWrap:'wrap'}}>
+                  <input type="number" min={0} value={xp} onChange={e=>setXp(parseInt(e.target.value)||0)} style={{width:72}} placeholder="XP"/>
+                  <button className="btn btn-gold btn-sm" onClick={()=>{onXP(personaje.id,xp);setXp(0)}}>+ XP</button>
+                  <button className="btn btn-ghost btn-sm" onClick={()=>onXP(personaje.id,100)}>+100 XP</button>
+                </div>
+              </div>
+              <div style={{background:'var(--bg-secondary)',borderRadius:'var(--radius)',padding:10}}>
+                <div style={{fontSize:11,color:'var(--text-muted)',marginBottom:8,fontWeight:700,textTransform:'uppercase',letterSpacing:1}}>Oro</div>
+                <div className="flex gap-2 items-center" style={{flexWrap:'wrap'}}>
+                  <input type="number" min={0} value={personaje.oro} onChange={e=>onUpdate(personaje.id,{oro:parseInt(e.target.value)||0})} style={{width:90}}/>
+                  <span style={{fontSize:12,color:'var(--text-muted)'}}>🪙</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function InventarioDJ({personaje,onAdd,onRemove,onTransfer}) {
+  const armas=useStore(s=>s.armas)
+  const [showAdd,setShowAdd]=useState(false)
+  const [form,setForm]=useState({nombre:'',descripcion:'',cantidad:1,tipo:'general',icono:'📦',apilable:true})
+  const inv=personaje.inventario||[]
+  const emojis={general:'📦',arma:'⚔️',armadura:'🛡️',consumible:'🧪',magia:'✨',quest:'📜'}
+
+  const addArmaRapida=a=>{onAdd({nombre:a.nombre,descripcion:`${a.dadoCantidad}d${a.dadoCaras}${a.modificador?`+${a.modificador}`:''}`,cantidad:1,tipo:'arma',icono:a.icono||'⚔️',apilable:false,dadoCantidad:a.dadoCantidad,dadoCaras:a.dadoCaras,modificador:a.modificador});setShowAdd(false)}
+
+  return (
+    <div>
+      <div className="flex justify-between items-center mb-2">
+        <span style={{fontSize:12,color:'var(--text-muted)'}}>{inv.length} objetos · 🪙 {personaje.oro}</span>
+        <div className="flex gap-2">
+          <button className="btn btn-ghost btn-sm" onClick={onTransfer}>↔ Transferir</button>
+          <button className="btn btn-primary btn-sm" onClick={()=>setShowAdd(true)}>+ Añadir</button>
+        </div>
+      </div>
+      {!inv.length?<div style={{fontSize:12,color:'var(--text-muted)',textAlign:'center',padding:12}}>Inventario vacío</div>:(
+        <div style={{display:'flex',flexDirection:'column',gap:4}}>
+          {inv.map(item=>(
+            <div key={item.id} className="inv-item" style={{padding:'6px 10px'}}>
+              <div className="flex gap-2 items-center flex-1">
+                <span>{emojis[item.tipo]||'📦'}</span>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:13,fontWeight:500}}>{item.nombre}</div>
+                  {item.descripcion&&<div style={{fontSize:11,color:'var(--text-muted)'}}>{item.descripcion}</div>}
+                </div>
+              </div>
+              <div className="flex gap-2 items-center">
+                <span className="badge badge-gray">×{item.cantidad}</span>
+                <button className="btn btn-danger btn-sm btn-icon" onClick={()=>onRemove(item.id)}>✕</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      {showAdd&&(
+        <Modal titulo="+ Añadir objeto" onClose={()=>setShowAdd(false)}>
+          <div className="tabs">
+            <button className="tab active">Manual</button>
+          </div>
+          {/* Armas rápidas */}
+          <div style={{marginBottom:12}}>
+            <div style={{fontSize:12,color:'var(--text-muted)',marginBottom:6}}>Armas rápidas:</div>
+            <div style={{display:'flex',flexWrap:'wrap',gap:4}}>
+              {armas.map(a=>(
+                <button key={a.id} className="btn btn-ghost btn-sm" onClick={()=>addArmaRapida(a)}>
+                  {a.icono} {a.nombre}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="divider"/>
+          <div className="form-group"><label>Nombre</label><input value={form.nombre} onChange={e=>setForm(f=>({...f,nombre:e.target.value}))} autoFocus/></div>
+          <div className="form-group"><label>Descripción</label><input value={form.descripcion} onChange={e=>setForm(f=>({...f,descripcion:e.target.value}))}/></div>
+          <div className="form-row">
+            <div className="form-group"><label>Tipo</label>
+              <select value={form.tipo} onChange={e=>setForm(f=>({...f,tipo:e.target.value}))}>
+                {['general','arma','armadura','consumible','magia','quest'].map(t=><option key={t}>{t}</option>)}
+              </select>
+            </div>
+            <div className="form-group"><label>Cantidad</label><input type="number" min={1} value={form.cantidad} onChange={e=>setForm(f=>({...f,cantidad:parseInt(e.target.value)||1}))}/></div>
+          </div>
+          <div className="modal-actions">
+            <button className="btn btn-ghost" onClick={()=>setShowAdd(false)}>Cancelar</button>
+            <button className="btn btn-primary" onClick={()=>{if(form.nombre.trim()){onAdd(form);setShowAdd(false);setForm({nombre:'',descripcion:'',cantidad:1,tipo:'general',icono:'📦',apilable:true})}}}>Añadir</button>
+          </div>
+        </Modal>
+      )}
+    </div>
+  )
+}
+
+function EstadosPanel({personaje,estadosDisponibles,onAplicar,onQuitar}) {
+  const [showPicker,setShowPicker]=useState(false)
+  const activos=personaje.estados||[]
+  return (
+    <div>
+      <div className="flex justify-between items-center mb-2">
+        <span style={{fontSize:12,color:'var(--text-muted)'}}>Estados activos: {activos.length}</span>
+        <button className="btn btn-primary btn-sm" onClick={()=>setShowPicker(true)}>+ Aplicar</button>
+      </div>
+      {!activos.length?<div style={{fontSize:12,color:'var(--text-muted)',textAlign:'center',padding:8}}>Sin estados activos</div>:(
+        <div style={{display:'flex',flexWrap:'wrap',gap:4}}>
+          {activos.map(e=><EstadoChip key={e.id} estado={e} onRemove={()=>onQuitar(e.id)}/>)}
+        </div>
+      )}
+      {showPicker&&(
+        <Modal titulo="Aplicar estado" onClose={()=>setShowPicker(false)} size="modal-lg">
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))',gap:8}}>
+            {estadosDisponibles.map(e=>(
+              <button key={e.id} className="card" style={{textAlign:'left',cursor:'pointer',padding:'10px 12px',border:'1px solid var(--border)'}}
+                onClick={()=>{onAplicar(e.id);setShowPicker(false)}}>
+                <div style={{fontWeight:600,fontSize:13}}>{e.icono} {e.nombre}</div>
+                <div style={{fontSize:11,color:'var(--text-muted)',marginTop:2}}>{e.descripcion}</div>
+                <div style={{marginTop:4,display:'flex',gap:8,fontSize:11}}>
+                  <span className={`badge ${e.tipo==='positivo'?'badge-green':'badge-red'}`}>{e.tipo}</span>
+                  <span style={{color:'var(--text-muted)'}}>⏱ {e.duracion}t</span>
+                </div>
+              </button>
+            ))}
+          </div>
+        </Modal>
+      )}
+    </div>
+  )
+}
+
+function TransferModal({fromPid,personajes,onTransfer,onClose}) {
+  const from=personajes.find(p=>p.id===fromPid)
+  const [toPid,setToPid]=useState('')
+  const [itemId,setItemId]=useState('')
+  const [cant,setCant]=useState(1)
+  if(!from) return null
+  const inv=from.inventario||[]
+  const item=inv.find(i=>i.id===itemId)
+  return (
+    <Modal titulo="↔ Transferir objeto" onClose={onClose} size="modal-sm">
+      <div className="form-group"><label>Objeto de {from.nombre}</label>
+        <select value={itemId} onChange={e=>setItemId(e.target.value)}>
+          <option value="">-- Seleccionar --</option>
+          {inv.map(i=><option key={i.id} value={i.id}>{i.nombre} (×{i.cantidad})</option>)}
+        </select>
+      </div>
+      <div className="form-group"><label>Destino</label>
+        <select value={toPid} onChange={e=>setToPid(e.target.value)}>
+          <option value="">-- Seleccionar --</option>
+          {personajes.filter(p=>p.id!==fromPid).map(p=><option key={p.id} value={p.id}>{p.nombre}</option>)}
+        </select>
+      </div>
+      {item&&<div className="form-group"><label>Cantidad (max {item.cantidad})</label>
+        <input type="number" min={1} max={item.cantidad} value={cant} onChange={e=>setCant(parseInt(e.target.value)||1)}/>
+      </div>}
+      <div className="modal-actions">
+        <button className="btn btn-ghost" onClick={onClose}>Cancelar</button>
+        <button className="btn btn-primary" disabled={!itemId||!toPid}
+          onClick={()=>onTransfer(fromPid,toPid,itemId,cant)}>Transferir</button>
+      </div>
+    </Modal>
+  )
+}
+
+// ─── Tab Enemigos ─────────────────────────────────────────────────────────────
+function TabEnemigos() {
+  const {enemigos,usuarioActual,crearEnemigo,eliminarEnemigo,
+    añadirEnemigoACombate,dañarEnemigoCombate,curarEnemigoCombate,
+    eliminarEnemigoCombate,combateActivo,partidaActiva}=useStore(s=>s)
+  const [subTab,setSubTab]=useState('biblioteca')
+  const [showForm,setShowForm]=useState(false)
+  const [form,setForm]=useState({nombre:'',vidaMax:20,ataque:5,defensa:12,dadosDaño:'1d8',habilidades:'',tipo:'normal'})
+  const [del,setDel]=useState(null)
+  const [cants,setCants]=useState({})
+  const mis=enemigos.filter(e=>e.creadoPor===usuarioActual.id||e.creadoPor==='system')
+  const enCombate=partidaActiva?.enemigosEnCombate||[]
+
+  const save=()=>{
+    if(!form.nombre.trim()) return
+    crearEnemigo({...form,vidaMax:parseInt(form.vidaMax)||20,ataque:parseInt(form.ataque)||5,defensa:parseInt(form.defensa)||12})
+    setShowForm(false); setForm({nombre:'',vidaMax:20,ataque:5,defensa:12,dadosDaño:'1d8',habilidades:'',tipo:'normal'})
+  }
+  return (
+    <div>
+      <div className="tabs">
+        <button className={`tab ${subTab==='biblioteca'?'active':''}`} onClick={()=>setSubTab('biblioteca')}>📚 Biblioteca</button>
+        <button className={`tab ${subTab==='combate'?'active':''}`} onClick={()=>setSubTab('combate')}>⚔️ Combate {enCombate.length>0&&`(${enCombate.length})`}</button>
+      </div>
+      {subTab==='biblioteca'&&(
+        <div>
+          <div className="flex justify-end mb-3"><button className="btn btn-primary btn-sm" onClick={()=>setShowForm(true)}>+ Nuevo</button></div>
+          {!mis.length?<div className="empty-state"><div className="icon">💀</div><p>Sin enemigos</p></div>:(
+            <div style={{display:'flex',flexDirection:'column',gap:8}}>
+              {mis.map(e=>(
+                <div key={e.id} className="card" style={{padding:'10px 12px'}}>
+                  <div className="flex items-center gap-2">
+                    <div style={{flex:1}}>
+                      <div className="flex gap-2 items-center mb-1">
+                        <span style={{fontWeight:600,fontSize:13}}>{e.nombre}</span>
+                        <BadgeTipoEnemigo tipo={e.tipo}/>
+                      </div>
+                      <div style={{fontSize:12,color:'var(--text-muted)'}}>❤ {e.vidaMax} · ⚔ {e.ataque} · 🛡 {e.defensa} · 🎲 {e.dadosDaño}</div>
+                      {e.habilidades&&<div style={{fontSize:11,color:'var(--text-secondary)',marginTop:3}}>🔮 {e.habilidades}</div>}
+                    </div>
+                    <button className="btn btn-gold btn-sm" onClick={()=>{añadirEnemigoACombate(e.id);setSubTab('combate')}} disabled={!combateActivo} title={!combateActivo?'Inicia el combate primero':''}>+ Combate</button>
+                    <button className="btn btn-danger btn-sm btn-icon" onClick={()=>setDel(e.id)}>✕</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+      {subTab==='combate'&&(
+        <div>
+          {!enCombate.length?<div className="empty-state"><div className="icon">⚔️</div><p>Sin enemigos en combate</p><p style={{marginTop:4,fontSize:12}}>Añade desde Biblioteca</p></div>:(
+            <div style={{display:'flex',flexDirection:'column',gap:10}}>
+              {enCombate.map(e=>(
+                <div key={e.instanciaId} className="card" style={{opacity:e.derrotado?0.5:1}}>
+                  <div className="flex gap-2 items-center mb-2">
+                    <div style={{flex:1}}>
+                      <div className="flex gap-2 items-center">
+                        <span style={{fontWeight:600}}>{e.nombre}</span>
+                        <BadgeTipoEnemigo tipo={e.tipo}/>
+                        {e.derrotado&&<span style={{color:'var(--red)',fontSize:12}}>💀 Derrotado</span>}
+                      </div>
+                    </div>
+                    <button className="btn btn-ghost btn-sm btn-icon" onClick={()=>eliminarEnemigoCombate(e.instanciaId)}>✕</button>
+                  </div>
+                  <HPBar actual={e.vidaActual} max={e.vidaMax}/>
+                  {!e.derrotado&&(
+                    <div className="flex gap-2" style={{marginTop:8,flexWrap:'wrap'}}>
+                      <input type="number" min={0} value={cants[e.instanciaId]||''} onChange={ev=>setCants(c=>({...c,[e.instanciaId]:parseInt(ev.target.value)||0}))} placeholder="Cant." style={{width:70}}/>
+                      <button className="btn btn-danger btn-sm" onClick={()=>dañarEnemigoCombate(e.instanciaId,cants[e.instanciaId]||0)}>⚔ Dañar</button>
+                      <button className="btn btn-success btn-sm" onClick={()=>curarEnemigoCombate(e.instanciaId,cants[e.instanciaId]||0)}>💚 Curar</button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+      {showForm&&(
+        <Modal titulo="+ Nuevo enemigo" onClose={()=>setShowForm(false)}>
+          <div className="form-group"><label>Nombre</label><input value={form.nombre} onChange={e=>setForm(f=>({...f,nombre:e.target.value}))} autoFocus/></div>
+          <div className="form-row">
+            <div className="form-group"><label>Vida máx</label><input type="number" value={form.vidaMax} onChange={e=>setForm(f=>({...f,vidaMax:e.target.value}))}/></div>
+            <div className="form-group"><label>Tipo</label><select value={form.tipo} onChange={e=>setForm(f=>({...f,tipo:e.target.value}))}><option value="normal">Normal</option><option value="mini">Mini-Jefe</option><option value="boss">Jefe Final</option></select></div>
+          </div>
+          <div className="form-row-3">
+            <div className="form-group"><label>Ataque</label><input type="number" value={form.ataque} onChange={e=>setForm(f=>({...f,ataque:e.target.value}))}/></div>
+            <div className="form-group"><label>Defensa</label><input type="number" value={form.defensa} onChange={e=>setForm(f=>({...f,defensa:e.target.value}))}/></div>
+            <div className="form-group"><label>Daño</label><input value={form.dadosDaño} onChange={e=>setForm(f=>({...f,dadosDaño:e.target.value}))} placeholder="1d8+2"/></div>
+          </div>
+          <div className="form-group"><label>Habilidades</label><textarea rows={2} value={form.habilidades} onChange={e=>setForm(f=>({...f,habilidades:e.target.value}))} style={{resize:'vertical'}}/></div>
+          <div className="modal-actions">
+            <button className="btn btn-ghost" onClick={()=>setShowForm(false)}>Cancelar</button>
+            <button className="btn btn-primary" onClick={save}>Guardar</button>
+          </div>
+        </Modal>
+      )}
+      {del&&<Confirm mensaje="¿Eliminar este enemigo?" onConfirm={()=>{eliminarEnemigo(del);setDel(null)}} onCancel={()=>setDel(null)}/>}
+    </div>
+  )
+}
+
+// ─── Tab PNJ ──────────────────────────────────────────────────────────────────
+function TabPNJ() {
+  const {pnjs,usuarioActual,crearPnj,actualizarPnj,eliminarPnj,invocarPnjEnPartida}=useStore(s=>s)
+  const [showForm,setShowForm]=useState(false)
+  const [editId,setEditId]=useState(null)
+  const [form,setForm]=useState({nombre:'',imagen:'',descripcion:'',nivelAmistad:50,estadoEmocional:'Neutral'})
+  const [del,setDel]=useState(null)
+  const mis=pnjs.filter(p=>p.creadoPor===usuarioActual.id||p.creadoPor==='system')
+  const emo={Enfadado:'😠',Triste:'😢',Neutral:'😐',Contento:'😊',Eufórico:'😄',Miedoso:'😨'}
+  const save=()=>{
+    if(!form.nombre.trim()) return
+    editId?actualizarPnj(editId,form):crearPnj(form)
+    setShowForm(false); setEditId(null); setForm({nombre:'',imagen:'',descripcion:'',nivelAmistad:50,estadoEmocional:'Neutral'})
+  }
+  const edit=p=>{setForm({nombre:p.nombre,imagen:p.imagen||'',descripcion:p.descripcion,nivelAmistad:p.nivelAmistad,estadoEmocional:p.estadoEmocional});setEditId(p.id);setShowForm(true)}
+  return (
+    <div>
+      <div className="flex justify-end mb-3"><button className="btn btn-primary btn-sm" onClick={()=>{setEditId(null);setShowForm(true)}}>+ Nuevo</button></div>
+      {!mis.length?<div className="empty-state"><div className="icon">🗣</div><p>Sin PNJs</p></div>:(
+        <div style={{display:'flex',flexDirection:'column',gap:10}}>
+          {mis.map(p=>(
+            <div key={p.id} className="card">
+              <div className="flex gap-2 items-start">
+                <Portrait src={p.imagen} nombre={p.nombre} size={44} emoji="🗣"/>
+                <div style={{flex:1,minWidth:0}}>
+                  <div className="flex gap-2 items-center mb-1">
+                    <span style={{fontWeight:600}}>{p.nombre}</span>
+                    <BadgeAfinidad afinidad={p.afinidad}/>
+                    <span title={p.estadoEmocional}>{emo[p.estadoEmocional]||'😐'}</span>
+                  </div>
+                  <div style={{marginBottom:4}}>
+                    <div className="flex justify-between" style={{fontSize:11,color:'var(--text-muted)',marginBottom:2}}>
+                      <span>Amistad</span><span>{p.nivelAmistad}/100</span>
+                    </div>
+                    <div className="hp-bar" style={{height:6}}>
+                      <div style={{width:`${p.nivelAmistad}%`,height:'100%',borderRadius:3,
+                        background:p.nivelAmistad>60?'var(--green)':p.nivelAmistad>40?'var(--blue)':p.nivelAmistad>20?'var(--orange)':'var(--red)',transition:'width .3s'}}/>
+                    </div>
+                  </div>
+                  {p.descripcion&&<p style={{fontSize:12,color:'var(--text-muted)'}}>{p.descripcion.slice(0,80)}{p.descripcion.length>80?'…':''}</p>}
+                  <div className="flex gap-2 mt-2" style={{flexWrap:'wrap'}}>
+                    <button className="btn btn-ghost btn-sm" onClick={()=>actualizarPnj(p.id,{nivelAmistad:Math.max(0,p.nivelAmistad-10)})}>−10</button>
+                    <button className="btn btn-ghost btn-sm" onClick={()=>actualizarPnj(p.id,{nivelAmistad:Math.max(0,p.nivelAmistad-5)})}>−5</button>
+                    <button className="btn btn-ghost btn-sm" onClick={()=>actualizarPnj(p.id,{nivelAmistad:Math.min(100,p.nivelAmistad+5)})}>+5</button>
+                    <button className="btn btn-ghost btn-sm" onClick={()=>actualizarPnj(p.id,{nivelAmistad:Math.min(100,p.nivelAmistad+10)})}>+10</button>
+                    <select value={p.estadoEmocional} onChange={e=>actualizarPnj(p.id,{estadoEmocional:e.target.value})} style={{width:'auto',fontSize:12,padding:'4px 8px'}}>
+                      {ESTADOS_EMOCIONALES.map(e=><option key={e}>{e}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <button className="btn btn-ghost btn-sm btn-icon" onClick={()=>edit(p)}>✏</button>
+                  <button className="btn btn-gold btn-sm btn-icon" onClick={()=>invocarPnjEnPartida(p.id)} title="Invocar">📍</button>
+                  <button className="btn btn-danger btn-sm btn-icon" onClick={()=>setDel(p.id)}>✕</button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      {showForm&&(
+        <Modal titulo={editId?'✏ Editar PNJ':'+ Nuevo PNJ'} onClose={()=>{setShowForm(false);setEditId(null)}}>
+          <div className="form-group"><label>Nombre</label><input value={form.nombre} onChange={e=>setForm(f=>({...f,nombre:e.target.value}))} autoFocus/></div>
+          <div className="form-group"><label>URL imagen</label><input value={form.imagen} onChange={e=>setForm(f=>({...f,imagen:e.target.value}))} placeholder="https://..."/></div>
+          <div className="form-group"><label>Descripción</label><textarea rows={3} value={form.descripcion} onChange={e=>setForm(f=>({...f,descripcion:e.target.value}))} style={{resize:'vertical'}}/></div>
+          <div className="form-row">
+            <div className="form-group"><label>Amistad: {form.nivelAmistad}</label><input type="range" min={0} max={100} value={form.nivelAmistad} onChange={e=>setForm(f=>({...f,nivelAmistad:parseInt(e.target.value)}))} style={{background:'none',border:'none',padding:0,width:'100%',cursor:'pointer'}}/></div>
+            <div className="form-group"><label>Estado emocional</label><select value={form.estadoEmocional} onChange={e=>setForm(f=>({...f,estadoEmocional:e.target.value}))}>{ESTADOS_EMOCIONALES.map(e=><option key={e}>{e}</option>)}</select></div>
+          </div>
+          <div className="modal-actions">
+            <button className="btn btn-ghost" onClick={()=>{setShowForm(false);setEditId(null)}}>Cancelar</button>
+            <button className="btn btn-primary" onClick={save}>Guardar</button>
+          </div>
+        </Modal>
+      )}
+      {del&&<Confirm mensaje="¿Eliminar este PNJ?" onConfirm={()=>{eliminarPnj(del);setDel(null)}} onCancel={()=>setDel(null)}/>}
+    </div>
+  )
+}
+
+// ─── Tab Relaciones ───────────────────────────────────────────────────────────
+function TabRelaciones() {
+  const {partidaActiva,personajes,setRelacion,getRelacion}=useStore(s=>s)
+  const [form,setForm]=useState({pid1:'',pid2:'',tipo:'Amistad',valor:50})
+  const [saving,setSaving]=useState(false)
+  const jugadores=(partidaActiva?.jugadores||[]).map(id=>personajes.find(p=>p.usuarioId===id&&p.gameId===partidaActiva.id)).filter(Boolean)
+  const rels=partidaActiva?.relaciones||[]
+
+  const save=()=>{
+    if(!form.pid1||!form.pid2||form.pid1===form.pid2) return
+    setRelacion(form.pid1,form.pid2,form.tipo,form.valor)
+    setSaving(false)
+  }
+
+  const valColor=v=>v>=70?'var(--green)':v>=40?'var(--blue)':v>=20?'var(--orange)':'var(--red)'
+
+  return (
+    <div>
+      <div className="flex justify-between items-center mb-3">
+        <div className="section-header" style={{margin:0}}>Relaciones entre personajes</div>
+        <button className="btn btn-primary btn-sm" onClick={()=>setSaving(true)}>+ Nueva</button>
+      </div>
+
+      {!rels.length?<div className="empty-state"><div className="icon">🔗</div><p>Sin relaciones definidas</p></div>:(
+        <div style={{display:'flex',flexDirection:'column',gap:6}}>
+          {rels.map(r=>{
+            const p1=jugadores.find(p=>p.id===r.pid1||p.id===r.pid1)
+            const p2=jugadores.find(p=>p.id===r.pid2||p.id===r.pid2)
+            return (
+              <div key={r.key} className="card" style={{padding:'10px 12px'}}>
+                <div className="flex gap-2 items-center">
+                  <span style={{fontSize:18}}>{RELACION_EMOJI[r.tipo]||'🔗'}</span>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:13,fontWeight:600}}>
+                      {p1?.nombre||r.pid1} ↔ {p2?.nombre||r.pid2}
+                    </div>
+                    <div style={{fontSize:12,color:'var(--text-muted)'}}>{r.tipo}</div>
+                  </div>
+                  <div style={{textAlign:'right'}}>
+                    <div style={{fontWeight:700,color:valColor(r.valor)}}>{r.valor}/100</div>
+                    <div style={{width:60,marginTop:3}}>
+                      <div className="hp-bar" style={{height:4}}>
+                        <div style={{width:`${r.valor}%`,height:'100%',borderRadius:2,background:valColor(r.valor)}}/>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {saving&&(
+        <Modal titulo="+ Nueva relación" onClose={()=>setSaving(false)} size="modal-sm">
+          <div className="form-group"><label>Personaje 1</label>
+            <select value={form.pid1} onChange={e=>setForm(f=>({...f,pid1:e.target.value}))}>
+              <option value="">-- Seleccionar --</option>
+              {jugadores.map(p=><option key={p.id} value={p.id}>{p.nombre}</option>)}
+            </select>
+          </div>
+          <div className="form-group"><label>Personaje 2</label>
+            <select value={form.pid2} onChange={e=>setForm(f=>({...f,pid2:e.target.value}))}>
+              <option value="">-- Seleccionar --</option>
+              {jugadores.filter(p=>p.id!==form.pid1).map(p=><option key={p.id} value={p.id}>{p.nombre}</option>)}
+            </select>
+          </div>
+          <div className="form-group"><label>Tipo de relación</label>
+            <select value={form.tipo} onChange={e=>setForm(f=>({...f,tipo:e.target.value}))}>
+              {TIPOS_RELACION.map(t=><option key={t}>{t}</option>)}
+            </select>
+          </div>
+          <div className="form-group"><label>Valor: {form.valor}/100</label>
+            <input type="range" min={0} max={100} value={form.valor} onChange={e=>setForm(f=>({...f,valor:parseInt(e.target.value)}))} style={{background:'none',border:'none',padding:0,width:'100%',cursor:'pointer'}}/>
+          </div>
+          <div className="modal-actions">
+            <button className="btn btn-ghost" onClick={()=>setSaving(false)}>Cancelar</button>
+            <button className="btn btn-primary" onClick={save}>Guardar</button>
+          </div>
+        </Modal>
+      )}
+    </div>
+  )
+}
+
+// ─── Tab Armas ────────────────────────────────────────────────────────────────
+function TabArmas() {
+  const {armas,crearArmaCustom,eliminarArmaCustom,usuarioActual}=useStore(s=>s)
+  const [showForm,setShowForm]=useState(false)
+  const [form,setForm]=useState({nombre:'',dadoCantidad:1,dadoCaras:8,modificador:0,descripcion:'',icono:'⚔️'})
+  const [del,setDel]=useState(null)
+
+  const save=()=>{
+    if(!form.nombre.trim()) return
+    crearArmaCustom({...form,dadoCantidad:parseInt(form.dadoCantidad)||1,dadoCaras:parseInt(form.dadoCaras)||8,modificador:parseInt(form.modificador)||0})
+    setShowForm(false); setForm({nombre:'',dadoCantidad:1,dadoCaras:8,modificador:0,descripcion:'',icono:'⚔️'})
+  }
+
+  return (
+    <div>
+      <div className="flex justify-between items-center mb-3">
+        <div className="section-header" style={{margin:0}}>Catálogo de armas ({armas.length})</div>
+        <button className="btn btn-primary btn-sm" onClick={()=>setShowForm(true)}>+ Nueva arma</button>
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(240px,1fr))',gap:8}}>
+        {armas.map(a=>(
+          <div key={a.id} className="card" style={{padding:'10px 12px'}}>
+            <div className="flex gap-2 items-center">
+              <span style={{fontSize:22}}>{a.icono||'⚔️'}</span>
+              <div style={{flex:1}}>
+                <div style={{fontWeight:600,fontSize:13}}>{a.nombre}</div>
+                <div style={{fontSize:12,color:'var(--gold)',fontWeight:600}}>🎲 {a.dadoCantidad}d{a.dadoCaras}{a.modificador?`+${a.modificador}`:''}</div>
+                {a.descripcion&&<div style={{fontSize:11,color:'var(--text-muted)'}}>{a.descripcion}</div>}
+              </div>
+              {a.creadoPor&&a.creadoPor!=='system'&&a.creadoPor===usuarioActual?.id&&(
+                <button className="btn btn-danger btn-sm btn-icon" onClick={()=>setDel(a.id)}>✕</button>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+      {showForm&&(
+        <Modal titulo="+ Nueva arma personalizada" onClose={()=>setShowForm(false)}>
+          <div className="form-group"><label>Nombre</label><input value={form.nombre} onChange={e=>setForm(f=>({...f,nombre:e.target.value}))} autoFocus placeholder="ej: Espadón rúnico"/></div>
+          <div className="form-row-3">
+            <div className="form-group"><label>Cantidad dados</label><input type="number" min={1} value={form.dadoCantidad} onChange={e=>setForm(f=>({...f,dadoCantidad:e.target.value}))}/></div>
+            <div className="form-group"><label>Caras dado</label>
+              <select value={form.dadoCaras} onChange={e=>setForm(f=>({...f,dadoCaras:e.target.value}))}>
+                {[4,6,8,10,12,20].map(c=><option key={c} value={c}>d{c}</option>)}
+              </select>
+            </div>
+            <div className="form-group"><label>Modificador</label><input type="number" value={form.modificador} onChange={e=>setForm(f=>({...f,modificador:e.target.value}))}/></div>
+          </div>
+          <div className="form-row">
+            <div className="form-group"><label>Icono (emoji)</label><input value={form.icono} onChange={e=>setForm(f=>({...f,icono:e.target.value}))} maxLength={2}/></div>
+            <div className="form-group"><label>Descripción</label><input value={form.descripcion} onChange={e=>setForm(f=>({...f,descripcion:e.target.value}))} placeholder="Propiedades especiales"/></div>
+          </div>
+          <div style={{background:'var(--bg-secondary)',borderRadius:'var(--radius)',padding:10,marginBottom:12,fontSize:13,color:'var(--gold)'}}>
+            Vista previa: {form.icono} {form.nombre||'Arma'} → {form.dadoCantidad}d{form.dadoCaras}{form.modificador>0?`+${form.modificador}`:form.modificador<0?form.modificador:''}
+          </div>
+          <div className="modal-actions">
+            <button className="btn btn-ghost" onClick={()=>setShowForm(false)}>Cancelar</button>
+            <button className="btn btn-primary" onClick={save}>Crear arma</button>
+          </div>
+        </Modal>
+      )}
+      {del&&<Confirm mensaje="¿Eliminar esta arma?" onConfirm={()=>{eliminarArmaCustom(del);setDel(null)}} onCancel={()=>setDel(null)}/>}
+    </div>
+  )
+}
+
+// ─── Tab Estados DJ ────────────────────────────────────────────────────────────
+function TabEstadosDJ() {
+  const {estadosDisponibles,crearEstadoCustom}=useStore(s=>s)
+  const [showForm,setShowForm]=useState(false)
+  const [form,setForm]=useState({nombre:'',icono:'✨',descripcion:'',duracion:2,tipo:'negativo',efecto:'ninguno',valorEfecto:0})
+
+  const save=()=>{
+    if(!form.nombre.trim()) return
+    crearEstadoCustom({...form,duracion:parseInt(form.duracion)||2,valorEfecto:parseInt(form.valorEfecto)||0})
+    setShowForm(false); setForm({nombre:'',icono:'✨',descripcion:'',duracion:2,tipo:'negativo',efecto:'ninguno',valorEfecto:0})
+  }
+  return (
+    <div>
+      <div className="flex justify-between items-center mb-3">
+        <div className="section-header" style={{margin:0}}>Estados disponibles ({estadosDisponibles.length})</div>
+        <button className="btn btn-primary btn-sm" onClick={()=>setShowForm(true)}>+ Nuevo estado</button>
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(220px,1fr))',gap:8}}>
+        {estadosDisponibles.map(e=>(
+          <div key={e.id} className="card" style={{padding:'10px 12px',borderLeft:`3px solid ${e.tipo==='positivo'?'var(--green)':'var(--red)'}`}}>
+            <div style={{fontWeight:600,fontSize:14,marginBottom:4}}>{e.icono} {e.nombre}</div>
+            <p style={{fontSize:12,color:'var(--text-secondary)',marginBottom:6}}>{e.descripcion}</p>
+            <div className="flex gap-2" style={{flexWrap:'wrap'}}>
+              <span className={`badge ${e.tipo==='positivo'?'badge-green':'badge-red'}`}>{e.tipo}</span>
+              <span className="badge badge-gray">⏱ {e.duracion}t</span>
+              {e.valorEfecto!==0&&<span className="badge badge-orange">Efecto: {e.valorEfecto}</span>}
+            </div>
+          </div>
+        ))}
+      </div>
+      {showForm&&(
+        <Modal titulo="+ Nuevo estado" onClose={()=>setShowForm(false)}>
+          <div className="form-row">
+            <div className="form-group"><label>Nombre</label><input value={form.nombre} onChange={e=>setForm(f=>({...f,nombre:e.target.value}))} autoFocus/></div>
+            <div className="form-group"><label>Icono (emoji)</label><input value={form.icono} onChange={e=>setForm(f=>({...f,icono:e.target.value}))} maxLength={2}/></div>
+          </div>
+          <div className="form-group"><label>Descripción</label><textarea rows={2} value={form.descripcion} onChange={e=>setForm(f=>({...f,descripcion:e.target.value}))} style={{resize:'vertical'}}/></div>
+          <div className="form-row">
+            <div className="form-group"><label>Tipo</label><select value={form.tipo} onChange={e=>setForm(f=>({...f,tipo:e.target.value}))}><option value="negativo">Negativo</option><option value="positivo">Positivo</option></select></div>
+            <div className="form-group"><label>Duración (turnos)</label><input type="number" min={1} value={form.duracion} onChange={e=>setForm(f=>({...f,duracion:e.target.value}))}/></div>
+          </div>
+          <div className="form-row">
+            <div className="form-group"><label>Efecto automático</label>
+              <select value={form.efecto} onChange={e=>setForm(f=>({...f,efecto:e.target.value}))}>
+                <option value="ninguno">Ninguno</option>
+                <option value="daño_turno">Daño por turno</option>
+                <option value="cura_turno">Curación por turno</option>
+                <option value="mod_armadura">Modificar armadura</option>
+                <option value="mod_daño">Modificar daño</option>
+                <option value="sin_accion">Sin acción</option>
+                <option value="desventaja">Desventaja</option>
+              </select>
+            </div>
+            <div className="form-group"><label>Valor del efecto</label><input type="number" value={form.valorEfecto} onChange={e=>setForm(f=>({...f,valorEfecto:e.target.value}))}/></div>
+          </div>
+          <div className="modal-actions">
+            <button className="btn btn-ghost" onClick={()=>setShowForm(false)}>Cancelar</button>
+            <button className="btn btn-primary" onClick={save}>Crear estado</button>
+          </div>
+        </Modal>
+      )}
+    </div>
+  )
+}
+
+// ─── Tab Iniciativa ────────────────────────────────────────────────────────────
+function TabIniciativa() {
+  const {iniciativa,turnoActual,combateActivo,iniciarIniciativa,moverEnIniciativa,siguienteTurno,iniciarCombate}=useStore(s=>s)
+  const [drag,setDrag]=useState(null)
+  const over=(e,idx)=>{e.preventDefault();if(drag!==null&&drag!==idx){moverEnIniciativa(drag,idx);setDrag(idx)}}
+  if(!combateActivo) return (
+    <div className="empty-state"><div className="icon">⚡</div><p>Combate no activo</p>
+      <button className="btn btn-gold" style={{marginTop:12}} onClick={iniciarCombate}>⚔️ Iniciar combate</button>
+    </div>
+  )
+  return (
+    <div>
+      <div className="flex gap-2 mb-3">
+        <button className="btn btn-primary flex-1" onClick={iniciarIniciativa}>🎲 Relanzar iniciativa</button>
+        <button className="btn btn-gold" onClick={siguienteTurno}>➡ Siguiente</button>
+      </div>
+      {!iniciativa.length?<div className="empty-state"><p>Lanza la iniciativa primero</p></div>:(
+        <div style={{display:'flex',flexDirection:'column',gap:6}}>
+          {iniciativa.map((item,idx)=>(
+            <div key={item.id} className={`init-item ${idx===turnoActual?'current':''} ${item.derrotado?'defeated':''}`}
+              draggable onDragStart={()=>setDrag(idx)} onDragOver={e=>over(e,idx)} onDragEnd={()=>setDrag(null)}>
+              <span style={{width:28,height:28,borderRadius:'50%',background:idx===turnoActual?'var(--gold)':'var(--bg-tertiary)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,fontWeight:700,color:idx===turnoActual?'#000':'var(--text-muted)',flexShrink:0}}>
+                {idx+1}
+              </span>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontWeight:600,fontSize:13,display:'flex',alignItems:'center',gap:6}}>
+                  {item.tipo==='jugador'?'🧙':'💀'} {item.nombre}
+                  {item.derrotado&&<span style={{color:'var(--red)',fontSize:11}}>Derrotado</span>}
+                  {idx===turnoActual&&<span className="badge badge-gold" style={{fontSize:10}}>▶ Turno</span>}
+                </div>
+                <div style={{fontSize:11,color:'var(--text-muted)'}}>Roll: {item.roll} · HP: {item.vidaActual}/{item.vidaMax}</div>
+              </div>
+              <span style={{fontSize:13,color:'var(--text-muted)',userSelect:'none',cursor:'grab'}}>☰</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Tab Dados DJ ──────────────────────────────────────────────────────────────
+function TabDadosDJ() {
+  const [oculto,setOculto]=useState(false)
+  const clases=useStore(s=>s.clases)
+  const [showHabForm,setShowHabForm]=useState(false)
+  const [claseId,setClaseId]=useState(clases[0]?.id||'')
+  const [habForm,setHabForm]=useState({nombre:'',tipo:'activa',descripcion:'',daño:'',coste:0,recarga:0,icono:'⚡'})
+  const agregarHabilidadAClase=useStore(s=>s.agregarHabilidadAClase)
+
+  const saveHab=()=>{
+    if(!habForm.nombre.trim()||!claseId) return
+    agregarHabilidadAClase(claseId,{...habForm,coste:parseInt(habForm.coste)||0,recarga:parseInt(habForm.recarga)||0})
+    setShowHabForm(false); setHabForm({nombre:'',tipo:'activa',descripcion:'',daño:'',coste:0,recarga:0,icono:'⚡'})
+  }
+
+  return (
+    <div>
+      <div className="flex gap-2 mb-3 items-center">
+        <span style={{fontSize:13,color:'var(--text-secondary)'}}>Modo:</span>
+        <button className={`btn btn-sm ${!oculto?'btn-primary':'btn-ghost'}`} onClick={()=>setOculto(false)}>🌐 Pública</button>
+        <button className={`btn btn-sm ${oculto?'btn-primary':'btn-ghost'}`} onClick={()=>setOculto(true)}>🔒 Oculta</button>
+      </div>
+      <DiceRoller oculto={oculto} personajeNombre="DJ"/>
+      <div className="divider"/>
+      <div className="flex justify-between items-center mb-2">
+        <div className="section-header" style={{margin:0}}>Añadir habilidad a clase</div>
+        <button className="btn btn-gold btn-sm" onClick={()=>setShowHabForm(true)}>+ Habilidad</button>
+      </div>
+      <div className="divider"/>
+      <div className="section-header">Historial tiradas (público)</div>
+      <TiradasHistorial ocultas={true}/>
+      {showHabForm&&(
+        <Modal titulo="+ Nueva habilidad para clase" onClose={()=>setShowHabForm(false)}>
+          <div className="form-group"><label>Clase objetivo</label>
+            <select value={claseId} onChange={e=>setClaseId(e.target.value)}>
+              {clases.map(c=><option key={c.id} value={c.id}>{c.nombre}</option>)}
+            </select>
+          </div>
+          <div className="form-row">
+            <div className="form-group"><label>Nombre</label><input value={habForm.nombre} onChange={e=>setHabForm(h=>({...h,nombre:e.target.value}))} autoFocus/></div>
+            <div className="form-group"><label>Icono</label><input value={habForm.icono} onChange={e=>setHabForm(h=>({...h,icono:e.target.value}))} maxLength={2}/></div>
+          </div>
+          <div className="form-group"><label>Tipo</label>
+            <select value={habForm.tipo} onChange={e=>setHabForm(h=>({...h,tipo:e.target.value}))}>
+              <option value="activa">Activa</option><option value="pasiva">Pasiva</option>
+            </select>
+          </div>
+          <div className="form-group"><label>Descripción</label><textarea rows={2} value={habForm.descripcion} onChange={e=>setHabForm(h=>({...h,descripcion:e.target.value}))} style={{resize:'vertical'}}/></div>
+          <div className="form-row-3">
+            <div className="form-group"><label>Daño/Efecto</label><input value={habForm.daño} onChange={e=>setHabForm(h=>({...h,daño:e.target.value}))} placeholder="1d8+STR"/></div>
+            <div className="form-group"><label>Coste</label><input type="number" min={0} value={habForm.coste} onChange={e=>setHabForm(h=>({...h,coste:e.target.value}))}/></div>
+            <div className="form-group"><label>Recarga (t)</label><input type="number" min={0} value={habForm.recarga} onChange={e=>setHabForm(h=>({...h,recarga:e.target.value}))}/></div>
+          </div>
+          <div className="modal-actions">
+            <button className="btn btn-ghost" onClick={()=>setShowHabForm(false)}>Cancelar</button>
+            <button className="btn btn-primary" onClick={saveHab}>Añadir</button>
+          </div>
+        </Modal>
+      )}
+    </div>
+  )
+}
+
+
+// ═══ VistaJugador.jsx ═══
+
+
+// ─── Vista Jugador principal ───────────────────────────────────────────────────
+function VistaJugador() {
+  const usuarioActual = useStore(s => s.usuarioActual)
+  const partidaActiva = useStore(s => s.partidaActiva)
+  const personajes    = useStore(s => s.personajes)
+  const logout        = useStore(s => s.logout)
+  const setVista      = useStore(s => s.setVista)
+  const combateActivo = useStore(s => s.combateActivo)
+
+  const miPersonaje = personajes.find(p => p.usuarioId === usuarioActual.id && p.gameId === partidaActiva?.id)
+  const [tab, setTab] = useState(miPersonaje ? 'ficha' : 'crear')
+
+  if (!partidaActiva) return null
+
+  const escenas     = partidaActiva.escenas || []
+  const escenaActual = escenas.find(e => e.id === partidaActiva.escenaActualId)
+
+  const TABS = miPersonaje ? [
+    { id:'ficha',      label:'📋 Ficha' },
+    { id:'recursos',   label:'💎 Recursos' },
+    { id:'combate',    label:'⚔️ Combate' },
+    { id:'inventario', label:'🎒 Inventario' },
+    { id:'equipo',     label:'🛡 Equipo' },
+    { id:'habilidades',label:'✨ Habilidades' },
+    { id:'relaciones', label:'🔗 Relaciones' },
+    { id:'dados',      label:'🎲 Dados' },
+    { id:'log',        label:'📜 Log' },
+  ] : [{ id:'crear', label:'✨ Crear personaje' }]
+
+  return (
+    <div style={{minHeight:'100vh',display:'flex',flexDirection:'column',background:'var(--bg-primary)'}}>
+      {/* Header */}
+      <header style={{background:'var(--bg-secondary)',borderBottom:'1px solid var(--border)',padding:'10px 16px'}}>
+        <div className="flex items-center gap-2">
+          <button className="btn btn-ghost btn-sm btn-icon" onClick={()=>setVista('lobby')}>←</button>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontWeight:700,fontSize:14,color:'var(--gold)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{partidaActiva.nombre}</div>
+            {escenaActual && (
+              <div style={{fontSize:11,color:'var(--text-secondary)',display:'flex',alignItems:'center',gap:6}}>
+                <BadgeEscena tipo={escenaActual.tipo}/>
+                <span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{escenaActual.titulo}</span>
+              </div>
+            )}
+          </div>
+          {combateActivo && <span className="badge badge-red">⚔ COMBATE</span>}
+          <button className="btn btn-ghost btn-sm" onClick={logout}>✕</button>
+        </div>
+      </header>
+
+      {/* Escena activa */}
+      {escenaActual && (
+        <div style={{background:'var(--bg-tertiary)',borderBottom:'1px solid var(--border)',padding:'10px 16px'}}>
+          {escenaActual.imagen && (
+            <img src={escenaActual.imagen} alt="" onError={e=>e.target.style.display='none'}
+              style={{width:'100%',maxHeight:120,objectFit:'cover',borderRadius:6,marginBottom:8}}/>
+          )}
+          <p style={{fontSize:13,color:'var(--text-secondary)',lineHeight:1.6}}>{escenaActual.descripcion}</p>
+        </div>
+      )}
+
+      {/* Tabs */}
+      <div style={{background:'var(--bg-secondary)',borderBottom:'1px solid var(--border)',padding:'0 16px',display:'flex',overflowX:'auto',gap:2}}>
+        {TABS.map(t => (
+          <button key={t.id} onClick={()=>setTab(t.id)}
+            style={{padding:'10px 14px',background:'none',border:'none',cursor:'pointer',fontSize:13,
+              whiteSpace:'nowrap',transition:'color 0.15s',fontFamily:'var(--font)',
+              color:tab===t.id?'var(--gold)':'var(--text-secondary)',
+              borderBottom:tab===t.id?'2px solid var(--gold)':'2px solid transparent'}}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Contenido */}
+      <div style={{flex:1,padding:16,overflowY:'auto'}}>
+        {tab==='crear'      && <TabCrearPersonaje onCreado={()=>setTab('ficha')}/>}
+        {tab==='ficha'      && miPersonaje && <TabFicha personaje={miPersonaje}/>}
+        {tab==='recursos'   && miPersonaje && <TabRecursos personaje={miPersonaje}/>}
+        {tab==='combate'    && <TabCombate personaje={miPersonaje}/>}
+        {tab==='inventario' && miPersonaje && <TabInventario personaje={miPersonaje}/>}
+        {tab==='equipo'     && miPersonaje && <TabEquipo personaje={miPersonaje}/>}
+        {tab==='habilidades'&& miPersonaje && <TabHabilidades personaje={miPersonaje}/>}
+        {tab==='relaciones' && miPersonaje && <TabRelacionesJugador personaje={miPersonaje}/>}
+        {tab==='dados'      && miPersonaje && <TabDadosJugador personaje={miPersonaje}/>}
+        {tab==='log'        && <><div className="section-header">Registro de partida</div><LogPartida/></>}
+      </div>
+    </div>
+  )
+}
+
+// ─── Crear personaje ───────────────────────────────────────────────────────────
+function TabCrearPersonaje({ onCreado }) {
+  const clases        = useStore(s => s.clases)
+  const crearPersonaje= useStore(s => s.crearPersonaje)
+  const combateActivo = useStore(s => s.combateActivo)
+  const [form, setForm] = useState({
+    nombre:'', claseId:'guerrero', retrato:'', descripcion:'',
+    str:10, dex:10, con:10, int:10, wis:10, cha:10, oro:0,
+  })
+  const [puntosUsados, setPuntosUsados] = useState(0)
+  const PUNTOS_TOTAL = 27
+
+  if (combateActivo) return (
+    <div className="empty-state">
+      <div className="icon">🔒</div>
+      <p>No puedes crear personaje durante un combate</p>
+    </div>
+  )
+
+  const claseSeleccionada = clases.find(c => c.id === form.claseId)
+  const vidaEstimada = claseSeleccionada ? hpMaxima(claseSeleccionada, 1, form.con) : 10
+
+  const costeStat = v => {
+    if (v<=8) return 0; if (v===9) return 1; if (v===10) return 2; if (v===11) return 3
+    if (v===12) return 4; if (v===13) return 5; if (v===14) return 7; return 9
+  }
+  const setStat = (key, val) => {
+    const clamped = Math.max(8, Math.min(15, val))
+    const diff = costeStat(clamped) - costeStat(form[key])
+    if (puntosUsados + diff > PUNTOS_TOTAL && diff > 0) return
+    setPuntosUsados(p => p + diff)
+    setForm(f => ({...f, [key]: clamped}))
+  }
+
+  const STATS = [
+    {key:'str',label:'FUE',desc:'Fuerza – ataques cuerpo a cuerpo, carga'},
+    {key:'dex',label:'DES',desc:'Destreza – sigilo, iniciativa, ataques ágiles'},
+    {key:'con',label:'CON',desc:'Constitución – puntos de vida, resistencia'},
+    {key:'int',label:'INT',desc:'Inteligencia – hechizos, conocimiento'},
+    {key:'wis',label:'SAB',desc:'Sabiduría – percepción, curación'},
+    {key:'cha',label:'CAR',desc:'Carisma – persuasión, intimidación'},
+  ]
+
+  return (
+    <div style={{maxWidth:600,margin:'0 auto'}}>
+      <div className="section-header">✨ Crear personaje</div>
+
+      <div className="form-group">
+        <label>Nombre del personaje</label>
+        <input value={form.nombre} onChange={e=>setForm(f=>({...f,nombre:e.target.value}))} placeholder="¿Cómo se llama tu héroe?" autoFocus/>
+      </div>
+
+      <div className="form-group">
+        <label>Clase</label>
+        <select value={form.claseId} onChange={e=>setForm(f=>({...f,claseId:e.target.value}))}>
+          {clases.map(c => <option key={c.id} value={c.id}>{c.nombre}{c.isCustom?' (Custom)':''}</option>)}
+        </select>
+      </div>
+
+      {claseSeleccionada && (
+        <div style={{background:'var(--bg-secondary)',borderRadius:'var(--radius)',padding:12,marginBottom:12}}>
+          <div style={{fontWeight:600,color:'var(--gold)',marginBottom:6}}>{claseSeleccionada.nombre}</div>
+          <div style={{fontSize:12,color:'var(--text-secondary)',marginBottom:6}}>
+            Vida base: <strong>{claseSeleccionada.vidaBase}</strong> · +{claseSeleccionada.vidaPorNivel}/nivel ·
+            HP estimada nv.1: <strong style={{color:'var(--green)'}}>{vidaEstimada}</strong>
+          </div>
+          {(claseSeleccionada.recursosEspeciales||[]).map(r => (
+            <div key={r.nombre} style={{fontSize:12,color:'var(--text-secondary)'}}>
+              {r.icono} {r.nombre}: {r.max} máximo
+            </div>
+          ))}
+          <div style={{marginTop:8,display:'flex',flexWrap:'wrap',gap:4}}>
+            {(claseSeleccionada.habilidades||[]).map(h => (
+              <span key={h.id} className="skill-chip">{h.icono} {h.nombre}</span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Atributos con sistema de puntos */}
+      <div style={{marginBottom:12}}>
+        <div className="flex justify-between items-center mb-2">
+          <div className="section-header" style={{margin:0}}>Atributos</div>
+          <span style={{fontSize:12,color:puntosUsados>PUNTOS_TOTAL?'var(--red)':'var(--text-secondary)'}}>
+            Puntos libres: <strong style={{color:'var(--gold)'}}>{PUNTOS_TOTAL-puntosUsados}</strong>/{PUNTOS_TOTAL}
+          </span>
+        </div>
+        <div className="grid-6">
+          {STATS.map(({key,label,desc}) => (
+            <div key={key} className="stat-box" title={desc}>
+              <div className="stat-name">{label}</div>
+              <button onClick={()=>setStat(key,form[key]+1)} style={{background:'none',border:'none',color:'var(--purple-bright)',cursor:'pointer',fontSize:14,lineHeight:1,padding:0}}>▲</button>
+              <div className="stat-value">{form[key]}</div>
+              <button onClick={()=>setStat(key,form[key]-1)} style={{background:'none',border:'none',color:'var(--text-muted)',cursor:'pointer',fontSize:14,lineHeight:1,padding:0}}>▼</button>
+              <div className="stat-mod">{modStr(form[key])}</div>
+            </div>
+          ))}
+        </div>
+        <p style={{fontSize:11,color:'var(--text-muted)',marginTop:6}}>Rango: 8–15. Los puntos cuestan más a valores altos.</p>
+      </div>
+
+      <div className="form-row">
+        <div className="form-group">
+          <label>URL retrato (opcional)</label>
+          <input value={form.retrato} onChange={e=>setForm(f=>({...f,retrato:e.target.value}))} placeholder="https://..."/>
+        </div>
+        <div className="form-group">
+          <label>Oro inicial</label>
+          <input type="number" min={0} value={form.oro} onChange={e=>setForm(f=>({...f,oro:parseInt(e.target.value)||0}))}/>
+        </div>
+      </div>
+
+      <div className="form-group">
+        <label>Trasfondo (opcional)</label>
+        <textarea rows={3} value={form.descripcion} onChange={e=>setForm(f=>({...f,descripcion:e.target.value}))} placeholder="¿Quién es tu personaje? ¿De dónde viene? ¿Qué busca?" style={{resize:'vertical'}}/>
+      </div>
+
+      <button className="btn btn-primary" style={{width:'100%',marginTop:4}} disabled={!form.nombre.trim()||puntosUsados>PUNTOS_TOTAL}
+        onClick={()=>{crearPersonaje(form);onCreado()}}>
+        ✨ Crear personaje
+      </button>
+    </div>
+  )
+}
+
+// ─── Tab Ficha ─────────────────────────────────────────────────────────────────
+function TabFicha({ personaje }) {
+  const clases        = useStore(s => s.clases)
+  const combateActivo = useStore(s => s.combateActivo)
+  const actualizarPersonaje = useStore(s => s.actualizarPersonaje)
+  const clase = clases.find(c => c.id === personaje.claseId)
+  const bloqueado = combateActivo
+
+  return (
+    <div>
+      {/* Cabecera */}
+      <div className="card" style={{marginBottom:12}}>
+        <div className="flex gap-3 items-center" style={{marginBottom:12}}>
+          <Portrait src={personaje.retrato} nombre={personaje.nombre} size={60}/>
+          <div style={{flex:1}}>
+            <div style={{fontWeight:700,fontSize:20}}>{personaje.nombre}</div>
+            <div style={{display:'flex',gap:8,flexWrap:'wrap',marginTop:4}}>
+              <span className="badge badge-purple">{clase?.nombre||'Sin clase'}</span>
+              <span className="badge badge-gold">Nivel {personaje.nivel}</span>
+              <span style={{fontSize:12,color:'var(--gold)'}}>🪙 {personaje.oro} oro</span>
+            </div>
+            {personaje.descripcion && <p style={{fontSize:12,color:'var(--text-muted)',marginTop:6,lineHeight:1.6}}>{personaje.descripcion}</p>}
+          </div>
+        </div>
+
+        {/* HP + Armadura */}
+        <div className="form-row" style={{marginBottom:10}}>
+          <div>
+            <div className="flex justify-between" style={{marginBottom:4}}>
+              <span style={{fontSize:12,color:'var(--text-muted)'}}>Puntos de Vida</span>
+              <span style={{fontWeight:700,fontSize:15}}>{personaje.vidaActual}<span style={{color:'var(--text-muted)',fontWeight:400}}>/{personaje.vidaMax}</span></span>
+            </div>
+            <HPBar actual={personaje.vidaActual} max={personaje.vidaMax} showNumbers={false} height={12}/>
+          </div>
+          <div style={{background:'var(--bg-secondary)',borderRadius:'var(--radius)',padding:'10px',textAlign:'center'}}>
+            <div style={{fontSize:26,fontWeight:700}}>{personaje.armadura}</div>
+            <div style={{fontSize:11,color:'var(--text-muted)'}}>🛡 Armadura</div>
+          </div>
+        </div>
+
+        {/* XP */}
+        <XPBar xp={personaje.xp} nivel={personaje.nivel}/>
+        {personaje.puntosPendientes>0 && (
+          <div style={{marginTop:6,padding:'6px 10px',background:'rgba(212,175,55,0.08)',borderRadius:'var(--radius)',border:'1px solid rgba(212,175,55,0.2)',fontSize:12,color:'var(--gold)'}}>
+            ✨ Tienes <strong>{personaje.puntosPendientes}</strong> punto(s) de atributo pendiente(s). Pide al DJ que los asigne.
+          </div>
+        )}
+
+        {/* Estados activos */}
+        {(personaje.estados||[]).length>0 && (
+          <div style={{marginTop:8,display:'flex',flexWrap:'wrap',gap:4}}>
+            {personaje.estados.map(e => <EstadoChip key={e.id} estado={e}/>)}
+          </div>
+        )}
+      </div>
+
+      {/* Atributos */}
+      <div className="section-header">Atributos</div>
+      <StatGrid personaje={personaje}/>
+
+      {/* Notas adicionales */}
+      <div style={{marginTop:12}}>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:8}}>
+          {[
+            {label:'Iniciativa',valor:`${modStr(personaje.dex)}`,desc:'DEX'},
+            {label:'Velocidad',valor:'30 m',desc:'Base'},
+            {label:'Percepción',valor:`${10+calcMod(personaje.wis)}`,desc:'10+SAB'},
+          ].map(item=>(
+            <div key={item.label} style={{background:'var(--bg-secondary)',borderRadius:'var(--radius)',padding:'8px',textAlign:'center'}}>
+              <div style={{fontSize:18,fontWeight:700,color:'var(--purple-bright)'}}>{item.valor}</div>
+              <div style={{fontSize:11,fontWeight:600,color:'var(--text-secondary)'}}>{item.label}</div>
+              <div style={{fontSize:10,color:'var(--text-muted)'}}>{item.desc}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {bloqueado && (
+        <div style={{marginTop:12,padding:10,background:'rgba(224,82,82,0.08)',border:'1px solid var(--red-dim)',borderRadius:'var(--radius)',fontSize:12,color:'var(--text-secondary)'}}>
+          🔒 La ficha está bloqueada durante el combate.
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Tab Recursos ─────────────────────────────────────────────────────────────
+function TabRecursos({ personaje }) {
+  const clases = useStore(s => s.clases)
+  const actualizarPersonaje = useStore(s => s.actualizarPersonaje)
+  const clase = clases.find(c => c.id === personaje.claseId)
+  const recursosEsp = clase?.recursosEspeciales || []
+  const actuales = personaje.recursosActuales || {}
+
+  const setRecurso = (nombre, val) => {
+    const max = recursosEsp.find(r => r.nombre === nombre)?.max || 10
+    actualizarPersonaje(personaje.id, {recursosActuales:{...actuales,[nombre]:Math.max(0,Math.min(max,val))}})
+  }
+
+  return (
+    <div>
+      <div className="section-header">Recursos de {clase?.nombre}</div>
+
+      {!recursosEsp.length ? (
+        <div className="empty-state"><p>Esta clase no tiene recursos especiales</p></div>
+      ) : (
+        <div style={{display:'flex',flexDirection:'column',gap:12}}>
+          {recursosEsp.map(r => {
+            const actual = actuales[r.nombre] ?? r.max
+            const pct = r.max > 0 ? actual / r.max : 0
+            return (
+              <div key={r.nombre} className="card">
+                <div className="flex justify-between items-center" style={{marginBottom:8}}>
+                  <div style={{fontWeight:600,fontSize:15}}>{r.icono} {r.nombre}</div>
+                  <div style={{fontSize:20,fontWeight:700,color:'var(--purple-bright)'}}>{actual}<span style={{color:'var(--text-muted)',fontSize:13,fontWeight:400}}>/{r.max}</span></div>
+                </div>
+                <div className="hp-bar" style={{height:10,marginBottom:10}}>
+                  <div style={{width:`${pct*100}%`,height:'100%',borderRadius:5,background:'var(--purple-bright)',transition:'width .3s'}}/>
+                </div>
+                {/* Puntos visuales */}
+                <div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:10}}>
+                  {Array.from({length:r.max},(_,i)=>(
+                    <button key={i} onClick={()=>setRecurso(r.nombre,i<actual?i:i+1)}
+                      style={{width:28,height:28,borderRadius:'50%',border:`2px solid var(--purple)`,
+                        background:i<actual?'var(--purple)':'transparent',cursor:'pointer',transition:'all .15s'}}>
+                    </button>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <button className="btn btn-ghost btn-sm" onClick={()=>setRecurso(r.nombre,actual-1)}>− Gastar</button>
+                  <button className="btn btn-primary btn-sm" onClick={()=>setRecurso(r.nombre,r.max)}>↺ Descanso</button>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Oro editable */}
+      <div className="section-header" style={{marginTop:16}}>Oro y Riquezas</div>
+      <div className="card">
+        <div className="flex gap-3 items-center">
+          <span style={{fontSize:28}}>🪙</span>
+          <div style={{flex:1}}>
+            <div style={{fontWeight:700,fontSize:24,color:'var(--gold)'}}>{personaje.oro}</div>
+            <div style={{fontSize:12,color:'var(--text-muted)'}}>piezas de oro</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Tab Combate (jugador) ─────────────────────────────────────────────────────
+function TabCombate({ personaje }) {
+  const combateActivo = useStore(s => s.combateActivo)
+  const iniciativa    = useStore(s => s.iniciativa)
+  const turnoActual   = useStore(s => s.turnoActual)
+  const partidaActiva = useStore(s => s.partidaActiva)
+  const personajes    = useStore(s => s.personajes)
+  const armas         = useStore(s => s.armas)
+  const tirar         = useStore(s => s.tirar)
+  const clases        = useStore(s => s.clases)
+
+  const enCombate  = partidaActiva?.enemigosEnCombate || []
+  const jugadores  = (partidaActiva?.jugadores || [])
+    .map(id => personajes.find(p => p.usuarioId === id && p.gameId === partidaActiva.id))
+    .filter(Boolean)
+
+  const [armaSel, setArmaSel] = useState('')
+  const [lastAtaque, setLastAtaque] = useState(null)
+
+  if (!combateActivo) return (
+    <div className="empty-state">
+      <div className="icon">⚔️</div>
+      <p>No hay combate activo</p>
+      <p style={{fontSize:12,marginTop:4}}>El DJ iniciará el combate cuando sea necesario</p>
+    </div>
+  )
+
+  const armaSelObj = armas.find(a => a.id === armaSel)
+
+  const atacar = () => {
+    if (!armaSelObj || !personaje) return
+    // Tirada de ataque
+    const modAtk = calcMod(personaje.dex)
+    const ataque = tirar({dados:[{cantidad:1,caras:20}],modificador:modAtk,etiqueta:`Ataque con ${armaSelObj.nombre}`,personajeNombre:personaje.nombre})
+    // Tirada de daño
+    const modDmg = calcMod(armaSelObj.nombre.includes('arco')||armaSelObj.nombre.includes('Arco')?personaje.dex:personaje.str)
+    const daño   = tirar({dados:[{cantidad:armaSelObj.dadoCantidad,caras:armaSelObj.dadoCaras}],modificador:(armaSelObj.modificador||0)+modDmg,etiqueta:`Daño ${armaSelObj.nombre}`,personajeNombre:personaje.nombre})
+    setLastAtaque({ataque,daño,arma:armaSelObj.nombre})
+  }
+
+  return (
+    <div>
+      {/* Orden de turno */}
+      {iniciativa.length > 0 && (
+        <div style={{marginBottom:16}}>
+          <div className="section-header">Orden de turno</div>
+          <div style={{display:'flex',flexDirection:'column',gap:4}}>
+            {iniciativa.map((item,idx) => (
+              <div key={item.id} style={{display:'flex',gap:8,alignItems:'center',padding:'6px 10px',
+                background:idx===turnoActual?'rgba(212,175,55,0.08)':'var(--bg-secondary)',
+                border:`1px solid ${idx===turnoActual?'var(--gold)':'var(--border)'}`,borderRadius:'var(--radius)',fontSize:13}}>
+                <span style={{width:20,textAlign:'center',fontSize:11,color:'var(--text-muted)',fontWeight:700}}>{idx+1}</span>
+                <span>{item.tipo==='jugador'?'🧙':'💀'}</span>
+                <span style={{flex:1}}>{item.nombre}</span>
+                {idx===turnoActual && <span className="badge badge-gold" style={{fontSize:10}}>▶ Turno</span>}
+                {item.derrotado && <span style={{color:'var(--red)',fontSize:11}}>✕</span>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Atacar rápido */}
+      {personaje && (
+        <div className="card" style={{marginBottom:16}}>
+          <div className="card-title">⚔️ Atacar</div>
+          <div className="form-group">
+            <label>Arma equipada / seleccionar</label>
+            <select value={armaSel} onChange={e=>setArmaSel(e.target.value)}>
+              <option value="">-- Elegir arma --</option>
+              {armas.map(a=><option key={a.id} value={a.id}>{a.icono} {a.nombre} ({a.dadoCantidad}d{a.dadoCaras}{a.modificador?`+${a.modificador}`:''})</option>)}
+            </select>
+          </div>
+          {armaSelObj && (
+            <div style={{marginBottom:10,padding:'6px 10px',background:'var(--bg-secondary)',borderRadius:'var(--radius)',fontSize:12,color:'var(--text-secondary)'}}>
+              🎲 Daño: {armaSelObj.dadoCantidad}d{armaSelObj.dadoCaras}{armaSelObj.modificador?`+${armaSelObj.modificador}`:''} · {armaSelObj.descripcion}
+            </div>
+          )}
+          <button className="btn btn-danger" style={{width:'100%'}} onClick={atacar} disabled={!armaSel}>
+            ⚔️ Tirar ataque + daño
+          </button>
+          {lastAtaque && (
+            <div style={{marginTop:10,display:'flex',flexDirection:'column',gap:6}}>
+              <div className={`dice-result ${lastAtaque.ataque.esCritico?'crit':lastAtaque.ataque.esFallo?'fail':''}`}>
+                <span style={{fontSize:11,color:'var(--text-muted)'}}>ATK</span>
+                <span style={{fontWeight:700,fontSize:18,color:lastAtaque.ataque.esCritico?'var(--gold)':lastAtaque.ataque.esFallo?'var(--red)':'var(--text-primary)'}}>{lastAtaque.ataque.total}</span>
+                <span style={{fontSize:11,color:'var(--text-secondary)'}}>vs Armadura</span>
+                {lastAtaque.ataque.esCritico && <span style={{color:'var(--gold)'}}>🌟 ¡CRÍTICO!</span>}
+                {lastAtaque.ataque.esFallo   && <span style={{color:'var(--red)'}}>💀 FALLO</span>}
+              </div>
+              <div className="dice-result">
+                <span style={{fontSize:11,color:'var(--text-muted)'}}>DMG</span>
+                <span style={{fontWeight:700,fontSize:18,color:'var(--red)'}}>{lastAtaque.daño.total}</span>
+                <span style={{fontSize:11,color:'var(--text-secondary)'}}>{lastAtaque.arma}</span>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Aliados */}
+      <div className="section-header">Aliados</div>
+      <div style={{display:'flex',flexDirection:'column',gap:6,marginBottom:16}}>
+        {jugadores.map(p => (
+          <div key={p.id} style={{display:'flex',gap:8,alignItems:'center',padding:'6px 10px',
+            background:'var(--bg-secondary)',border:'1px solid var(--border)',borderRadius:'var(--radius)'}}>
+            <Portrait src={p.retrato} nombre={p.nombre} size={28}/>
+            <span style={{flex:1,fontSize:13,fontWeight:p.id===personaje?.id?600:400}}>
+              {p.nombre}{p.id===personaje?.id?' (tú)':''}
+            </span>
+            {(p.estados||[]).length>0 && (
+              <div style={{display:'flex',gap:2}}>
+                {p.estados.slice(0,3).map(e=><span key={e.id} title={e.nombre}>{e.icono}</span>)}
+              </div>
+            )}
+            <span style={{fontSize:12}}>{p.vidaActual}/{p.vidaMax}</span>
+            <div style={{width:60}}><HPBar actual={p.vidaActual} max={p.vidaMax} showNumbers={false} height={6}/></div>
+          </div>
+        ))}
+      </div>
+
+      {/* Enemigos (solo nombre y vida, NO estadísticas) */}
+      <div className="section-header">Enemigos</div>
+      <div style={{display:'flex',flexDirection:'column',gap:8}}>
+        {!enCombate.length
+          ? <div style={{fontSize:13,color:'var(--text-muted)',textAlign:'center',padding:12}}>Sin enemigos en combate</div>
+          : enCombate.map(e => (
+            <div key={e.instanciaId} className="card" style={{padding:'10px 12px',opacity:e.derrotado?0.5:1}}>
+              <div className="flex gap-2 items-center" style={{marginBottom:6}}>
+                <span style={{fontSize:18}}>💀</span>
+                <span style={{flex:1,fontWeight:600,fontSize:13}}>{e.nombre}</span>
+                <BadgeTipoEnemigo tipo={e.tipo}/>
+                {e.derrotado && <span style={{color:'var(--red)',fontSize:12}}>Derrotado</span>}
+              </div>
+              <HPBar actual={e.vidaActual} max={e.vidaMax} showNumbers={false} height={8}/>
+              <div style={{fontSize:11,color:'var(--text-muted)',marginTop:3,textAlign:'right'}}>{e.vidaActual}/{e.vidaMax} HP</div>
+              {/* Los jugadores NO ven ataque/defensa ni stats completos */}
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  )
+}
+
+// ─── Tab Inventario ────────────────────────────────────────────────────────────
+function TabInventario({ personaje }) {
+  const agregarAlInventario  = useStore(s => s.agregarAlInventario)
+  const quitarDelInventario  = useStore(s => s.quitarDelInventario)
+  const actualizarPersonaje  = useStore(s => s.actualizarPersonaje)
+  const combateActivo        = useStore(s => s.combateActivo)
+  const armas                = useStore(s => s.armas)
+  const [showAdd, setShowAdd]= useState(false)
+  const [filtro, setFiltro]  = useState('todos')
+  const [form, setForm]      = useState({nombre:'',descripcion:'',cantidad:1,tipo:'general',icono:'📦'})
+
+  const inv = personaje.inventario || []
+  const TIPOS = ['todos','general','arma','armadura','consumible','magia','quest']
+  const EMOJIS = {general:'📦',arma:'⚔️',armadura:'🛡️',consumible:'🧪',magia:'✨',quest:'📜'}
+  const filtrado = filtro==='todos' ? inv : inv.filter(i=>i.tipo===filtro)
+  const pesoTotal = inv.reduce((a,i)=>(a+(i.peso||0)*i.cantidad),0)
+
+  const addArmaRapida = a => {
+    agregarAlInventario(personaje.id,{
+      nombre:a.nombre, descripcion:`Daño: ${a.dadoCantidad}d${a.dadoCaras}${a.modificador?`+${a.modificador}`:''}`,
+      cantidad:1, tipo:'arma', icono:a.icono||'⚔️', apilable:false,
+      dadoCantidad:a.dadoCantidad, dadoCaras:a.dadoCaras, modificador:a.modificador,
+    })
+    setShowAdd(false)
+  }
+
+  const save = () => {
+    if (!form.nombre.trim()) return
+    agregarAlInventario(personaje.id, form)
+    setShowAdd(false)
+    setForm({nombre:'',descripcion:'',cantidad:1,tipo:'general',icono:'📦'})
+  }
+
+  return (
+    <div>
+      {/* Header */}
+      <div className="flex justify-between items-center" style={{marginBottom:12}}>
+        <div>
+          <div style={{fontWeight:600}}>Inventario <span style={{color:'var(--text-muted)',fontWeight:400,fontSize:12}}>({inv.length} objetos · ⚖ {pesoTotal.toFixed(1)}kg)</span></div>
+          <div style={{fontSize:12,color:'var(--gold)'}}>🪙 {personaje.oro} oro</div>
+        </div>
+        {!combateActivo && <button className="btn btn-primary btn-sm" onClick={()=>setShowAdd(true)}>+ Añadir</button>}
+      </div>
+
+      {/* Filtros */}
+      <div style={{display:'flex',gap:4,flexWrap:'wrap',marginBottom:12}}>
+        {TIPOS.map(t => (
+          <button key={t} onClick={()=>setFiltro(t)}
+            className={`btn btn-sm ${filtro===t?'btn-primary':'btn-ghost'}`}>
+            {t==='todos'?'Todos':EMOJIS[t]+' '+t}
+          </button>
+        ))}
+      </div>
+
+      {/* Oro editable */}
+      {!combateActivo && (
+        <div className="flex gap-2 items-center" style={{marginBottom:12}}>
+          <label style={{margin:0,whiteSpace:'nowrap'}}>🪙 Oro:</label>
+          <input type="number" min={0} value={personaje.oro}
+            onChange={e=>actualizarPersonaje(personaje.id,{oro:parseInt(e.target.value)||0})}
+            style={{width:90}}/>
+        </div>
+      )}
+
+      {/* Lista */}
+      {!filtrado.length
+        ? <div className="empty-state"><div className="icon">🎒</div><p>Sin objetos {filtro!=='todos'?`de tipo "${filtro}"`:''}</p></div>
+        : <div style={{display:'flex',flexDirection:'column',gap:5}}>
+            {filtrado.map(item => (
+              <div key={item.id} className="inv-item">
+                <div className="flex gap-2 items-center flex-1">
+                  <span style={{fontSize:18}}>{EMOJIS[item.tipo]||'📦'}</span>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontWeight:500,fontSize:13}}>{item.nombre}</div>
+                    {item.descripcion && <div style={{fontSize:11,color:'var(--text-muted)'}}>{item.descripcion}</div>}
+                    {item.dadoCaras && (
+                      <div style={{fontSize:11,color:'var(--gold)'}}>🎲 {item.dadoCantidad}d{item.dadoCaras}{item.modificador?`+${item.modificador}`:''}</div>
+                    )}
+                  </div>
+                </div>
+                <div className="flex gap-2 items-center">
+                  <span className="badge badge-gray">×{item.cantidad}</span>
+                  {!combateActivo && (
+                    <button className="btn btn-danger btn-sm btn-icon" onClick={()=>quitarDelInventario(personaje.id,item.id)}>✕</button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+      }
+
+      {/* Modal añadir */}
+      {showAdd && (
+        <Modal titulo="+ Añadir objeto" onClose={()=>setShowAdd(false)} size="modal-lg">
+          {/* Armas rápidas */}
+          <div style={{marginBottom:12}}>
+            <div style={{fontSize:12,color:'var(--text-muted)',marginBottom:6,fontWeight:600}}>⚔️ Añadir arma rápida:</div>
+            <div style={{display:'flex',flexWrap:'wrap',gap:4}}>
+              {armas.map(a => (
+                <button key={a.id} className="btn btn-ghost btn-sm" onClick={()=>addArmaRapida(a)}>
+                  {a.icono} {a.nombre} <span style={{color:'var(--gold)',fontSize:10}}>{a.dadoCantidad}d{a.dadoCaras}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="divider"/>
+          <div className="section-header">Objeto personalizado</div>
+          <div className="form-group"><label>Nombre</label><input value={form.nombre} onChange={e=>setForm(f=>({...f,nombre:e.target.value}))} autoFocus/></div>
+          <div className="form-group"><label>Descripción</label><input value={form.descripcion} onChange={e=>setForm(f=>({...f,descripcion:e.target.value}))}/></div>
+          <div className="form-row">
+            <div className="form-group"><label>Tipo</label>
+              <select value={form.tipo} onChange={e=>setForm(f=>({...f,tipo:e.target.value}))}>
+                {['general','arma','armadura','consumible','magia','quest'].map(t=><option key={t}>{t}</option>)}
+              </select>
+            </div>
+            <div className="form-group"><label>Cantidad</label><input type="number" min={1} value={form.cantidad} onChange={e=>setForm(f=>({...f,cantidad:parseInt(e.target.value)||1}))}/></div>
+          </div>
+          <div className="modal-actions">
+            <button className="btn btn-ghost" onClick={()=>setShowAdd(false)}>Cancelar</button>
+            <button className="btn btn-primary" onClick={save}>Añadir</button>
+          </div>
+        </Modal>
+      )}
+    </div>
+  )
+}
+
+// ─── Tab Equipo ────────────────────────────────────────────────────────────────
+function TabEquipo({ personaje }) {
+  const equiparObjeto   = useStore(s => s.equiparObjeto)
+  const desequiparObjeto= useStore(s => s.desequiparObjeto)
+  const combateActivo   = useStore(s => s.combateActivo)
+  const [slotActivo, setSlotActivo] = useState(null)
+
+  const inv      = personaje.inventario || []
+  const equipo   = personaje.equipamiento || {}
+  const armasInv = inv.filter(i => i.tipo==='arma'||i.tipo==='armadura')
+
+  const getItemEquipado = slot => inv.find(i => i.id === equipo[slot])
+
+  return (
+    <div>
+      <div className="section-header">Equipamiento</div>
+      <div style={{display:'flex',flexDirection:'column',gap:8}}>
+        {SLOT_EQUIPAMIENTO.map(slot => {
+          const item = getItemEquipado(slot)
+          return (
+            <div key={slot} className="card" style={{padding:'10px 12px'}}>
+              <div className="flex gap-2 items-center">
+                <span style={{fontSize:20,width:28,textAlign:'center'}}>{SLOT_ICONO[slot]}</span>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:11,color:'var(--text-muted)',textTransform:'uppercase',letterSpacing:1,fontWeight:700}}>{SLOT_LABEL[slot]}</div>
+                  {item
+                    ? <div style={{fontSize:13,fontWeight:500}}>{item.nombre} {item.dadoCaras&&<span style={{color:'var(--gold)',fontSize:11}}>{item.dadoCantidad}d{item.dadoCaras}{item.modificador?`+${item.modificador}`:''}</span>}</div>
+                    : <div style={{fontSize:12,color:'var(--text-muted)',fontStyle:'italic'}}>— Vacío —</div>
+                  }
+                </div>
+                {!combateActivo && (
+                  item
+                    ? <button className="btn btn-danger btn-sm" onClick={()=>desequiparObjeto(personaje.id,slot)}>Quitar</button>
+                    : <button className="btn btn-ghost btn-sm" onClick={()=>setSlotActivo(slot)}>Equipar</button>
+                )}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      {slotActivo && (
+        <Modal titulo={`Equipar en: ${SLOT_LABEL[slotActivo]}`} onClose={()=>setSlotActivo(null)} size="modal-sm">
+          {!inv.length
+            ? <p style={{color:'var(--text-muted)'}}>No tienes objetos en el inventario.</p>
+            : <div style={{display:'flex',flexDirection:'column',gap:6}}>
+                {inv.map(item => (
+                  <button key={item.id} className="card" style={{textAlign:'left',padding:'8px 12px',cursor:'pointer',border:'1px solid var(--border)'}}
+                    onClick={()=>{equiparObjeto(personaje.id,item.id,slotActivo);setSlotActivo(null)}}>
+                    <div style={{fontWeight:500,fontSize:13}}>{item.nombre}</div>
+                    {item.descripcion&&<div style={{fontSize:11,color:'var(--text-muted)'}}>{item.descripcion}</div>}
+                    {item.dadoCaras&&<div style={{fontSize:11,color:'var(--gold)'}}>{item.dadoCantidad}d{item.dadoCaras}{item.modificador?`+${item.modificador}`:''}</div>}
+                  </button>
+                ))}
+              </div>
+          }
+          <div className="modal-actions">
+            <button className="btn btn-ghost" onClick={()=>setSlotActivo(null)}>Cancelar</button>
+          </div>
+        </Modal>
+      )}
+    </div>
+  )
+}
+
+// ─── Tab Habilidades ───────────────────────────────────────────────────────────
+function TabHabilidades({ personaje }) {
+  const clases = useStore(s => s.clases)
+  const actualizarPersonaje = useStore(s => s.actualizarPersonaje)
+  const clase  = clases.find(c => c.id === personaje.claseId)
+  const habs   = clase?.habilidades || []
+  const cds    = personaje.habilidadesCooldown || {}
+
+  const usarHabilidad = (hab) => {
+    if (hab.recarga > 0 && cds[hab.id] > 0) return
+    if (hab.recarga > 0) {
+      actualizarPersonaje(personaje.id,{habilidadesCooldown:{...cds,[hab.id]:hab.recarga}})
+    }
+    // Gastar recurso si tiene coste
+    if (hab.coste > 0 && clase?.recursosEspeciales?.length) {
+      const recurso = clase.recursosEspeciales[0]
+      const actuals = personaje.recursosActuales || {}
+      const cur = actuals[recurso.nombre] ?? recurso.max
+      if (cur < hab.coste) return
+      actualizarPersonaje(personaje.id,{recursosActuales:{...actuals,[recurso.nombre]:cur-hab.coste}})
+    }
+  }
+
+  const avanzarTurnoHabs = () => {
+    const nuevoCDs = {}
+    for (const [id,v] of Object.entries(cds)) nuevoCDs[id] = Math.max(0,v-1)
+    actualizarPersonaje(personaje.id,{habilidadesCooldown:nuevoCDs})
+  }
+
+  const activas  = habs.filter(h => h.tipo==='activa')
+  const pasivas  = habs.filter(h => h.tipo==='pasiva')
+
+  return (
+    <div>
+      <div className="flex justify-between items-center mb-2">
+        <div className="section-header" style={{margin:0}}>Habilidades de {clase?.nombre}</div>
+        <button className="btn btn-ghost btn-sm" onClick={avanzarTurnoHabs} title="Avanzar 1 turno en recargas">⏭ Turno</button>
+      </div>
+
+      {activas.length > 0 && (
+        <>
+          <div className="section-header">Activas</div>
+          <div style={{display:'flex',flexDirection:'column',gap:10,marginBottom:16}}>
+            {activas.map(h => {
+              const cd = cds[h.id] || 0
+              const enRecarga = cd > 0
+              const recurso = clase?.recursosEspeciales?.[0]
+              const actuals = personaje.recursosActuales || {}
+              const sinRecurso = h.coste > 0 && recurso && (actuals[recurso.nombre]??recurso.max) < h.coste
+              return (
+                <div key={h.id} className="card" style={{opacity:enRecarga?0.6:1}}>
+                  <div className="flex gap-2 items-start">
+                    <span style={{fontSize:22,lineHeight:1}}>{h.icono||'⚡'}</span>
+                    <div style={{flex:1}}>
+                      <div className="flex gap-2 items-center" style={{marginBottom:4}}>
+                        <span style={{fontWeight:600,fontSize:14}}>{h.nombre}</span>
+                        <span className="badge badge-purple">Activa</span>
+                        {enRecarga && <span className="badge badge-orange">⏱ {cd}t</span>}
+                      </div>
+                      <p style={{fontSize:13,color:'var(--text-secondary)',marginBottom:6}}>{h.descripcion}</p>
+                      <div className="flex gap-3" style={{fontSize:12,marginBottom:8}}>
+                        {h.daño && <span style={{color:'var(--red)'}}>⚔ {h.daño}</span>}
+                        {h.coste>0 && recurso && <span style={{color:'var(--purple-bright)'}}>💎 Coste: {h.coste} {recurso.nombre}</span>}
+                        {h.recarga>0 && <span style={{color:'var(--orange)'}}>🔄 Recarga: {h.recarga}t</span>}
+                        {h.recarga===0 && <span style={{color:'var(--green)'}}>🔄 Sin recarga</span>}
+                      </div>
+                      <button className="btn btn-primary btn-sm" disabled={enRecarga||sinRecurso} onClick={()=>usarHabilidad(h)}>
+                        {enRecarga?`En recarga (${cd}t)`:sinRecurso?`Sin ${recurso?.nombre}`:'Usar habilidad'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </>
+      )}
+
+      {pasivas.length > 0 && (
+        <>
+          <div className="section-header">Pasivas</div>
+          <div style={{display:'flex',flexDirection:'column',gap:8}}>
+            {pasivas.map(h => (
+              <div key={h.id} className="card">
+                <div className="flex gap-2 items-start">
+                  <span style={{fontSize:22,lineHeight:1}}>{h.icono||'🌙'}</span>
+                  <div>
+                    <div className="flex gap-2 items-center" style={{marginBottom:4}}>
+                      <span style={{fontWeight:600,fontSize:14}}>{h.nombre}</span>
+                      <span className="badge badge-blue">Pasiva</span>
+                      <span className="badge badge-green">Siempre activa</span>
+                    </div>
+                    <p style={{fontSize:13,color:'var(--text-secondary)'}}>{h.descripcion}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {!habs.length && <div className="empty-state"><div className="icon">✨</div><p>Sin habilidades definidas para {clase?.nombre}</p></div>}
+
+      {/* Bonificaciones */}
+      {(clase?.bonificaciones||[]).length > 0 && (
+        <div style={{marginTop:16}}>
+          <div className="section-header">Bonificaciones automáticas</div>
+          {clase.bonificaciones.map((b,i) => (
+            <div key={i} style={{fontSize:13,padding:'6px 0',color:'var(--text-secondary)',borderBottom:'1px solid var(--border)'}}>
+              +{b.cantidad} {b.atributo.toUpperCase()} cada {b.cadaNiveles} niveles
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Tab Relaciones ────────────────────────────────────────────────────────────
+function TabRelacionesJugador({ personaje }) {
+  const partidaActiva = useStore(s => s.partidaActiva)
+  const personajes    = useStore(s => s.personajes)
+  const rels          = partidaActiva?.relaciones || []
+  const jugadores     = (partidaActiva?.jugadores || [])
+    .map(id => personajes.find(p => p.usuarioId === id && p.gameId === partidaActiva.id))
+    .filter(Boolean)
+
+  const misRels = rels.filter(r => r.pid1===personaje.id||r.pid2===personaje.id)
+  const valColor = v => v>=70?'var(--green)':v>=40?'var(--blue)':v>=20?'var(--orange)':'var(--red)'
+
+  return (
+    <div>
+      <div className="section-header">Mis relaciones</div>
+      {!misRels.length
+        ? <div className="empty-state"><div className="icon">🔗</div><p>Sin relaciones definidas aún</p><p style={{fontSize:12,marginTop:4}}>El DJ puede definirlas desde su panel</p></div>
+        : <div style={{display:'flex',flexDirection:'column',gap:8}}>
+            {misRels.map(r => {
+              const otro = jugadores.find(p => p.id===(r.pid1===personaje.id?r.pid2:r.pid1))
+              return (
+                <div key={r.key} className="card" style={{padding:'10px 12px'}}>
+                  <div className="flex gap-2 items-center">
+                    <span style={{fontSize:22}}>{RELACION_EMOJI[r.tipo]||'🔗'}</span>
+                    <div style={{flex:1}}>
+                      <div style={{fontWeight:600,fontSize:13}}>{r.tipo} con {otro?.nombre||'…'}</div>
+                    </div>
+                    <div style={{textAlign:'right'}}>
+                      <div style={{fontWeight:700,color:valColor(r.valor)}}>{r.valor}/100</div>
+                      <div style={{width:60,marginTop:2}}>
+                        <div className="hp-bar" style={{height:4}}>
+                          <div style={{width:`${r.valor}%`,height:'100%',borderRadius:2,background:valColor(r.valor)}}/>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+      }
+
+      <div className="section-header" style={{marginTop:16}}>Todas las relaciones del grupo</div>
+      {!rels.length
+        ? <div style={{fontSize:12,color:'var(--text-muted)',textAlign:'center',padding:12}}>Sin relaciones registradas</div>
+        : <div style={{display:'flex',flexDirection:'column',gap:6}}>
+            {rels.map(r => {
+              const p1 = jugadores.find(p=>p.id===r.pid1)
+              const p2 = jugadores.find(p=>p.id===r.pid2)
+              return (
+                <div key={r.key} style={{display:'flex',gap:8,alignItems:'center',padding:'6px 10px',
+                  background:'var(--bg-secondary)',border:'1px solid var(--border)',borderRadius:'var(--radius)',fontSize:12}}>
+                  <span>{RELACION_EMOJI[r.tipo]||'🔗'}</span>
+                  <span style={{flex:1}}>{p1?.nombre||'?'} ↔ {p2?.nombre||'?'} <span style={{color:'var(--text-muted)'}}>({r.tipo})</span></span>
+                  <span style={{fontWeight:700,color:valColor(r.valor)}}>{r.valor}</span>
+                </div>
+              )
+            })}
+          </div>
+      }
+    </div>
+  )
+}
+
+// ─── Tab Dados Jugador ─────────────────────────────────────────────────────────
+function TabDadosJugador({ personaje }) {
+  const [subTab,setSubTab] = useState('rapida')
+  const armas = useStore(s => s.armas)
+  const tirar = useStore(s => s.tirar)
+  const [armaSel, setArmaSel] = useState('')
+  const [lastDaño, setLastDaño] = useState(null)
+
+  const tirarDaño = () => {
+    const a = armas.find(x=>x.id===armaSel)
+    if(!a||!personaje) return
+    const mod = calcMod(personaje.str)
+    const r = tirar({dados:[{cantidad:a.dadoCantidad,caras:a.dadoCaras}],modificador:(a.modificador||0)+mod,etiqueta:`Daño: ${a.nombre}`,personajeNombre:personaje.nombre})
+    setLastDaño(r)
+  }
+
+  return (
+    <div>
+      <div className="tabs">
+        <button className={`tab ${subTab==='rapida'?'active':''}`} onClick={()=>setSubTab('rapida')}>Rápida</button>
+        <button className={`tab ${subTab==='arma'?'active':''}`} onClick={()=>setSubTab('arma')}>Por arma</button>
+        <button className={`tab ${subTab==='libre'?'active':''}`} onClick={()=>setSubTab('libre')}>Libre</button>
+        <button className={`tab ${subTab==='historial'?'active':''}`} onClick={()=>setSubTab('historial')}>Historial</button>
+      </div>
+
+      {subTab==='rapida' && (
+        <div>
+          <p style={{fontSize:12,color:'var(--text-muted)',marginBottom:12}}>Tiradas preconfiguradas con tus modificadores</p>
+          <QuickDice personaje={personaje}/>
+        </div>
+      )}
+
+      {subTab==='arma' && (
+        <div>
+          <div className="form-group" style={{marginBottom:10}}>
+            <label>Seleccionar arma</label>
+            <select value={armaSel} onChange={e=>setArmaSel(e.target.value)}>
+              <option value="">-- Elegir --</option>
+              {armas.map(a=><option key={a.id} value={a.id}>{a.icono} {a.nombre} ({a.dadoCantidad}d{a.dadoCaras})</option>)}
+            </select>
+          </div>
+          <button className="btn btn-danger" style={{width:'100%',marginBottom:10}} onClick={tirarDaño} disabled={!armaSel}>
+            🎲 Tirar daño
+          </button>
+          {lastDaño && (
+            <div className="dice-result">
+              <span style={{fontWeight:700,fontSize:20,color:'var(--red)'}}>{lastDaño.total}</span>
+              <div>
+                <div style={{fontSize:11,color:'var(--text-muted)'}}>[{lastDaño.resultados.map(r=>r.valor).join(',')}]{lastDaño.modificador!==0?(lastDaño.modificador>0?` +${lastDaño.modificador}`:` ${lastDaño.modificador}`):'  '}</div>
+                <div style={{fontSize:12,color:'var(--text-secondary)'}}>{lastDaño.etiqueta}</div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {subTab==='libre' && <DiceRoller personajeNombre={personaje.nombre}/>}
+      {subTab==='historial' && <TiradasHistorial ocultas={false}/>}
+    </div>
+  )
+}
+
+
+
+// ═══ App.jsx ═══
+
+
+function AppRoot() {
+  const vista = useStore(s => s.vista)
+  return React.createElement(React.Fragment, null,
+    vista === 'login'   && React.createElement(PantallaAuth, null),
+    vista === 'lobby'   && React.createElement(PantallaLobby, null),
+    vista === 'dj'      && React.createElement(VistaDJ, null),
+    vista === 'jugador' && React.createElement(VistaJugador, null),
+    React.createElement(ToastContainer, null)
+  )
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'))
+root.render(React.createElement(AppRoot, null))
+
+</script>
+
+</script>
+</body>
+</html>
