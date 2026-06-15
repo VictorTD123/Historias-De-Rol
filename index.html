@@ -133,6 +133,7 @@ label{display:block;font-size:12px;color:var(--text-secondary);margin-bottom:4px
 
 </style>
 <base target="_blank">
+<base target="_blank">
 </head>
 <body>
 <div id="root">
@@ -143,6 +144,9 @@ label{display:block;font-size:12px;color:var(--text-secondary);margin-bottom:4px
   </div>
 </div>
 <script type="text/babel" data-presets="react,env">
+
+
+
 
 // ============================================================
 // SUPABASE CONFIG
@@ -221,7 +225,20 @@ const armorBase  = (dex, bonus = 0) => 10 + calcMod(dex) + bonus
 
 const tirarDado  = caras => Math.floor(Math.random() * caras) + 1
 const tirarDados = (n, caras) => {
-  const rs = Array.from({length: n}, () => tirarDado(caras))
+  
+// ── Helper: snake_case → camelCase ──────────────────────────────────────────
+const toCamelCase = (obj) => {
+  if (obj === null || typeof obj !== 'object') return obj
+  if (Array.isArray(obj)) return obj.map(toCamelCase)
+  const result = {}
+  for (const [key, value] of Object.entries(obj)) {
+    const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase())
+    result[camelKey] = toCamelCase(value)
+  }
+  return result
+}
+
+const rs = Array.from({length: n}, () => tirarDado(caras))
   return { total: rs.reduce((a,b) => a+b, 0), resultados: rs }
 }
 
@@ -230,6 +247,9 @@ const tirarDados = (n, caras) => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const DADOS = [4,6,8,10,12,20,100]
+
+const SEED_PNJS = []
+const SEED_ENEMIGOS = []
 
 const CLASES_BASE = [
   { id:'guerrero', nombre:'Guerrero',   vidaBase:10, vidaPorNivel:3, atributoPrincipal:'str', isCustom:false,
@@ -323,14 +343,6 @@ const afinidadPorNivel = n => n<=20?'Hostil':n<=40?'Desconfiado':n<=60?'Neutral'
 // ═══ store.js (con Supabase) ═══
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SUPABASE CONFIG
-// ─────────────────────────────────────────────────────────────────────────────
-const SUPABASE_URL = "https://iluijhrkxqqnnwisoqgh.supabase.co"
-const SUPABASE_KEY = "sb_publishable_t763_xwSr-t9A9LumCQojw_f5ly6voh"
-const { createClient } = supabase
-const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY)
-
-// ─────────────────────────────────────────────────────────────────────────────
 // PERSISTENCIA SUPABASE
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -387,10 +399,10 @@ const useStore = create((set, get) => {
         filter: 'partida_id=eq.' + partidaId
       }, (payload) => {
         if (payload.eventType === 'INSERT') {
-          set(s => ({ personajes: [...s.personajes, payload.new] }))
+          set(s => ({ personajes: [...s.personajes, toCamelCase(payload.new)] }))
         } else if (payload.eventType === 'UPDATE') {
           set(s => ({
-            personajes: s.personajes.map(p => p.id === payload.new.id ? payload.new : p)
+            personajes: s.personajes.map(p => p.id === payload.new.id ? toCamelCase(payload.new) : p)
           }))
         } else if (payload.eventType === 'DELETE') {
           set(s => ({
@@ -410,8 +422,8 @@ const useStore = create((set, get) => {
         const { partidaActiva } = get()
         if (!partidaActiva) return
         let nuevasEscenas = [...(partidaActiva.escenas || [])]
-        if (payload.eventType === 'INSERT') nuevasEscenas.push(payload.new)
-        else if (payload.eventType === 'UPDATE') nuevasEscenas = nuevasEscenas.map(e => e.id === payload.new.id ? payload.new : e)
+        if (payload.eventType === 'INSERT') nuevasEscenas.push(toCamelCase(payload.new))
+        else if (payload.eventType === 'UPDATE') nuevasEscenas = nuevasEscenas.map(e => e.id === payload.new.id ? toCamelCase(payload.new) : e)
         else if (payload.eventType === 'DELETE') nuevasEscenas = nuevasEscenas.filter(e => e.id !== payload.old.id)
         set({
           partidaActiva: { ...partidaActiva, escenas: nuevasEscenas },
@@ -427,7 +439,7 @@ const useStore = create((set, get) => {
         event: 'INSERT', schema: 'public', table: 'log_eventos',
         filter: 'partida_id=eq.' + partidaId
       }, (payload) => {
-        set(s => ({ log: [payload.new, ...s.log].slice(0, 150) }))
+        set(s => ({ log: [toCamelCase(payload.new), ...s.log].slice(0, 150) }))
       })
       .subscribe()
     subscriptions.push(logChannel)
@@ -441,8 +453,8 @@ const useStore = create((set, get) => {
         const { partidaActiva } = get()
         if (!partidaActiva) return
         let nuevos = [...(partidaActiva.enemigosEnCombate || [])]
-        if (payload.eventType === 'INSERT') nuevos.push(payload.new)
-        else if (payload.eventType === 'UPDATE') nuevos = nuevos.map(e => e.id === payload.new.id ? payload.new : e)
+        if (payload.eventType === 'INSERT') nuevos.push(toCamelCase(payload.new))
+        else if (payload.eventType === 'UPDATE') nuevos = nuevos.map(e => e.id === payload.new.id ? toCamelCase(payload.new) : e)
         else if (payload.eventType === 'DELETE') nuevos = nuevos.filter(e => e.id !== payload.old.id)
         set({
           partidaActiva: { ...partidaActiva, enemigosEnCombate: nuevos },
@@ -458,8 +470,8 @@ const useStore = create((set, get) => {
         event: '*', schema: 'public', table: 'iniciativa',
         filter: 'partida_id=eq.' + partidaId
       }, (payload) => {
-        if (payload.eventType === 'INSERT') set(s => ({ iniciativa: [...s.iniciativa, payload.new] }))
-        else if (payload.eventType === 'UPDATE') set(s => ({ iniciativa: s.iniciativa.map(i => i.id === payload.new.id ? payload.new : i) }))
+        if (payload.eventType === 'INSERT') set(s => ({ iniciativa: [...s.iniciativa, toCamelCase(payload.new)] }))
+        else if (payload.eventType === 'UPDATE') set(s => ({ iniciativa: s.iniciativa.map(i => i.id === payload.new.id ? toCamelCase(payload.new) : i) }))
         else if (payload.eventType === 'DELETE') set(s => ({ iniciativa: s.iniciativa.filter(i => i.id !== payload.old.id) }))
       })
       .subscribe()
@@ -526,7 +538,7 @@ const useStore = create((set, get) => {
       if (session) {
         const { data: userData } = await supabaseClient.from('usuarios').select('*').eq('id', session.user.id).single()
         if (userData) {
-          set({ usuarioActual: userData, vista: 'lobby' })
+          set({ usuarioActual: toCamelCase(userData), vista: 'lobby' })
           await get().cargarPartidasUsuario()
         }
       }
@@ -538,8 +550,12 @@ const useStore = create((set, get) => {
       if (!usuarioActual) return
       const { data: partidasDJ } = await supabaseClient.from('partidas').select('*').eq('dj_id', usuarioActual.id)
       const { data: partidasJugador } = await supabaseClient.from('partida_jugadores').select('partida_id, partidas(*)').eq('usuario_id', usuarioActual.id)
-      const todas = [...(partidasDJ || []), ...(partidasJugador?.map(pj => pj.partidas) || [])]
-      set({ partidas: todas })
+      const todasRaw = [...(partidasDJ || []), ...(partidasJugador?.map(pj => pj.partidas) || [])]
+      const todasConJugadores = await Promise.all(todasRaw.map(async p => {
+        const { data: jd } = await supabaseClient.from('partida_jugadores').select('usuario_id').eq('partida_id', p.id)
+        return { ...p, jugadores: (jd || []).map(j => j.usuario_id) }
+      }))
+      set({ partidas: todasConJugadores.map(toCamelCase) })
     },
 
     crearPartida: async (nombre) => {
@@ -551,8 +567,9 @@ const useStore = create((set, get) => {
       }).select().single()
       if (handleError(error, toast)) return null
       await supabaseClient.from('partida_jugadores').insert({ partida_id: data.id, usuario_id: usuarioActual.id })
-      const nuevasPartidas = [...get().partidas, data]
-      set({ partidas: nuevasPartidas, partidaActiva: data, vista: 'dj', log: [], tiradas: [], iniciativa: [], combateActivo: false })
+      const partidaCamel = toCamelCase({ ...data, jugadores: [usuarioActual.id] })
+      const nuevasPartidas = [...get().partidas, partidaCamel]
+      set({ partidas: nuevasPartidas, partidaActiva: partidaCamel, vista: 'dj', log: [], tiradas: [], iniciativa: [], combateActivo: false })
       subscribeToPartida(data.id)
       toast('Partida "' + nombre + '" creada. Codigo: ' + data.codigo, 'success')
       return data
@@ -570,8 +587,10 @@ const useStore = create((set, get) => {
       }
       const { data: personajesPartida } = await supabaseClient.from('personajes').select('*').eq('partida_id', partida.id)
       const { data: escenas } = await supabaseClient.from('escenas').select('*').eq('partida_id', partida.id)
-      const partidaCompleta = { ...partida, escenas: escenas || [] }
-      set({ partidas: [...partidas, partidaCompleta], partidaActiva: partidaCompleta, personajes: personajesPartida || [], vista: 'jugador' })
+      const { data: jugadoresData } = await supabaseClient.from('partida_jugadores').select('usuario_id').eq('partida_id', partida.id)
+      const jugadores = (jugadoresData || []).map(j => j.usuario_id)
+      const partidaCompleta = toCamelCase({ ...partida, escenas: escenas || [], jugadores })
+      set({ partidas: [...partidas, partidaCompleta], partidaActiva: partidaCompleta, personajes: (personajesPartida || []).map(toCamelCase), vista: 'jugador' })
       subscribeToPartida(partida.id)
       toast('Te has unido a "' + partida.nombre + '"', 'success')
       return true
@@ -583,8 +602,10 @@ const useStore = create((set, get) => {
       if (!partida) return
       const { data: escenas } = await supabaseClient.from('escenas').select('*').eq('partida_id', pid)
       const { data: personajes } = await supabaseClient.from('personajes').select('*').eq('partida_id', pid)
-      const partidaCompleta = { ...partida, escenas: escenas || [] }
-      set({ partidaActiva: partidaCompleta, personajes: personajes || [], vista: partida.dj_id === usuarioActual.id ? 'dj' : 'jugador', combateActivo: partida.estado === 'activa' })
+      const { data: jugadoresData } = await supabaseClient.from('partida_jugadores').select('usuario_id').eq('partida_id', pid)
+      const jugadores = (jugadoresData || []).map(j => j.usuario_id)
+      const partidaCompleta = toCamelCase({ ...partida, escenas: escenas || [], jugadores })
+      set({ partidaActiva: partidaCompleta, personajes: (personajes || []).map(toCamelCase), vista: partida.dj_id === usuarioActual.id ? 'dj' : 'jugador', combateActivo: partida.estado === 'activa' })
       subscribeToPartida(pid)
     },
 
@@ -638,12 +659,13 @@ const useStore = create((set, get) => {
         str: datos.str || 10, dex: datos.dex || 10, con: datos.con || 10, int: datos.int || 10,
         wis: datos.wis || 10, cha: datos.cha || 10, vida_max: vidaMax, vida_actual: vidaMax,
         armadura: armorBase(datos.dex || 10), xp: 0, oro: datos.oro || 0,
-        recursos_actuales: {}, puntos_pendientes: 0, creado_en: now()
+        recursos_actuales: {}, puntos_pendientes: 0, creado_en: now(),
+        equipamiento: {}, estados: [], habilidades_cooldown: {}, inventario: []
       }
       for (const r of (clase.recursosEspeciales || [])) personajeData.recursos_actuales[r.nombre] = r.max
       const { data, error } = await supabaseClient.from('personajes').insert(personajeData).select().single()
       if (error) { console.error(error); return }
-      set(s => ({ personajes: [...s.personajes, data] }))
+      set(s => ({ personajes: [...s.personajes, toCamelCase(data)] }))
       agregarLog?.('✨ ' + data.nombre + ' se une a la aventura')
       get().toast('Personaje "' + data.nombre + '" creado', 'success')
       return data
@@ -872,7 +894,7 @@ const useStore = create((set, get) => {
       const { data, error } = await supabaseClient.from('pnjs').insert(p).select().single()
       if (error) { console.error(error); return }
       toast('PNJ "' + datos.nombre + '" creado', 'success')
-      return data
+      return toCamelCase(data)
     },
 
     actualizarPnj: async (id, cambios) => {
@@ -902,7 +924,7 @@ const useStore = create((set, get) => {
       const { data, error } = await supabaseClient.from('enemigos').insert(e).select().single()
       if (error) { console.error(error); return }
       toast('Enemigo "' + datos.nombre + '" creado', 'success')
-      return data
+      return toCamelCase(data)
     },
 
     actualizarEnemigo: async (id, cambios) => {
@@ -3590,7 +3612,8 @@ function AppRoot() {
 const root = ReactDOM.createRoot(document.getElementById('root'))
 root.render(React.createElement(AppRoot, null))
 
-</script>
+
+
 
 </script>
 </body>
