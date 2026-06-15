@@ -148,6 +148,8 @@ label{display:block;font-size:12px;color:var(--text-secondary);margin-bottom:4px
 
 
 
+
+
 // ============================================================
 // SUPABASE CONFIG
 // ============================================================
@@ -489,32 +491,38 @@ const useStore = create((set, get) => {
     cerrarToast: id => set(s => ({ toasts: s.toasts.filter(t => t.id !== id) })),
 
     registrar: async (email, password, rol, nombre) => {
+      console.log('[registrar] Intentando registrar:', email, rol, nombre)
       const { data: authData, error: authError } = await supabaseClient.auth.signUp({
         email, password, options: { data: { nombre, rol } }
       })
-      if (handleError(authError, get().toast)) return false
+      if (authError) { console.error('[registrar] Auth error:', authError); get().toast('Error de registro: ' + authError.message, 'error'); return false }
       if (authData.user) {
+        console.log('[registrar] Usuario auth creado:', authData.user.id)
         const { error: dbError } = await supabaseClient.from('usuarios').insert({
           id: authData.user.id, email, nombre, rol, creado_en: now()
         })
-        if (handleError(dbError, get().toast)) return false
+        if (dbError) { console.error('[registrar] DB error:', dbError); get().toast('Error al guardar usuario: ' + dbError.message, 'error'); return false }
         const usuario = { id: authData.user.id, email, nombre, rol, creadoEn: now() }
         set({ usuarioActual: usuario, vista: 'lobby' })
         get().toast('Bienvenido, ' + nombre + '!', 'success')
         return true
       }
+      console.error('[registrar] No se creó usuario')
       return false
     },
 
     login: async (email, password, rol) => {
+      console.log('[login] Intentando login:', email, rol)
       const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({ email, password })
-      if (handleError(authError, get().toast)) return false
+      if (authError) { console.error('[login] Auth error:', authError); get().toast('Error de login: ' + authError.message, 'error'); return false }
       if (authData.user) {
+        console.log('[login] Usuario autenticado:', authData.user.id)
         const { data: userData, error: userError } = await supabaseClient.from('usuarios').select('*').eq('id', authData.user.id).single()
-        if (handleError(userError, get().toast)) return false
-        if (userData && userData.rol === rol) {
-          set({ usuarioActual: userData, vista: 'lobby' })
-          get().toast('Bienvenido de nuevo, ' + userData.nombre + '!', 'success')
+        if (userError) { console.error('[login] DB error:', userError); get().toast('Error al cargar usuario: ' + userError.message, 'error'); return false }
+        const userCamel = toCamelCase(userData)
+        if (userCamel && userCamel.rol === rol) {
+          set({ usuarioActual: userCamel, vista: 'lobby' })
+          get().toast('Bienvenido de nuevo, ' + userCamel.nombre + '!', 'success')
           await get().cargarPartidasUsuario()
           return true
         } else {
@@ -548,31 +556,84 @@ const useStore = create((set, get) => {
     cargarPartidasUsuario: async () => {
       const { usuarioActual } = get()
       if (!usuarioActual) return
-      const { data: partidasDJ } = await supabaseClient.from('partidas').select('*').eq('dj_id', usuarioActual.id)
-      const { data: partidasJugador } = await supabaseClient.from('partida_jugadores').select('partida_id, partidas(*)').eq('usuario_id', usuarioActual.id)
+      console.log('[cargarPartidasUsuario] Cargando partidas para:', usuarioActual.id)
+      const { data: partidasDJ, error: errDJ } = await supabaseClient.from('partidas').select('*').eq('dj_id', usuarioActual.id)
+      if (errDJ) console.error('[cargarPartidasUsuario] Error partidasDJ:', errDJ)
+      const { data: partidasJugador, error: errPJ } = await supabaseClient.from('partida_jugadores').select('partida_id, partidas(*)').eq('usuario_id', usuarioActual.id)
+      if (errPJ) console.error('[cargarPartidasUsuario] Error partidasJugador:', errPJ)
       const todasRaw = [...(partidasDJ || []), ...(partidasJugador?.map(pj => pj.partidas) || [])]
+      console.log('[cargarPartidasUsuario] Partidas raw:', todasRaw.length)
       const todasConJugadores = await Promise.all(todasRaw.map(async p => {
         const { data: jd } = await supabaseClient.from('partida_jugadores').select('usuario_id').eq('partida_id', p.id)
         return { ...p, jugadores: (jd || []).map(j => j.usuario_id) }
       }))
-      set({ partidas: todasConJugadores.map(toCamelCase) })
+      const partidasCamel = todasConJugadores.map(toCamelCase)
+      console.log('[cargarPartidasUsuario] Partidas cargadas:', partidasCamel.length)
+      set({ partidas: partidasCamel })
     },
 
     crearPartida: async (nombre) => {
       const { usuarioActual, toast } = get()
-      if (!usuarioActual) return null
+      if (!usuarioActual) { toast('No hay usuario activo', 'error'); return null }
+
+      // Verificar conexión primero
+      try {
+        const { error: testError } = await supabaseClient.from('partidas').select('id').limit(1)
+        if (testError) {
+          console.error('[crearPartida] Error de conexión:', testError)
+          toast('Error de conexión con la base de datos. ¿Ejecutaste el schema SQL?', 'error')
+          return null
+        }
+      } catch(e) {
+        console.error('[crearPartida] Excepción de conexión:', e)
+        toast('No se puede conectar con Supabase', 'error')
+        return null
+      }
+
       const codigo = genCode()
+      console.log('[crearPartida] Creando partida:', nombre, 'codigo:', codigo, 'dj_id:', usuarioActual.id)
+
       const { data, error } = await supabaseClient.from('partidas').insert({
         codigo, nombre, dj_id: usuarioActual.id, estado: 'lobby', creada_en: now()
       }).select().single()
-      if (handleError(error, toast)) return null
-      await supabaseClient.from('partida_jugadores').insert({ partida_id: data.id, usuario_id: usuarioActual.id })
+
+      if (error) { 
+        console.error('[crearPartida] Error insert:', error)
+        const msg = error.message || error.details || error.hint || JSON.stringify(error)
+        toast('Error al crear partida: ' + msg, 'error')
+        return null 
+      }
+
+      if (!data) { 
+        console.error('[crearPartida] data es null')
+        toast('Error: no se recibió respuesta de la base de datos. Verifica que la tabla "partidas" existe.', 'error')
+        return null 
+      }
+
+      console.log('[crearPartida] Partida creada en DB:', data)
+
+      const { error: joinError } = await supabaseClient.from('partida_jugadores').insert({ 
+        partida_id: data.id, usuario_id: usuarioActual.id 
+      })
+
+      if (joinError) { 
+        console.error('[crearPartida] Error join:', joinError)
+        toast('Advertencia: Partida creada pero error al registrar DJ: ' + joinError.message, 'warning')
+      }
+
       const partidaCamel = toCamelCase({ ...data, jugadores: [usuarioActual.id] })
       const nuevasPartidas = [...get().partidas, partidaCamel]
-      set({ partidas: nuevasPartidas, partidaActiva: partidaCamel, vista: 'dj', log: [], tiradas: [], iniciativa: [], combateActivo: false })
+
+      set({ 
+        partidas: nuevasPartidas, 
+        partidaActiva: partidaCamel, 
+        vista: 'dj', 
+        log: [], tiradas: [], iniciativa: [], combateActivo: false 
+      })
+
       subscribeToPartida(data.id)
-      toast('Partida "' + nombre + '" creada. Codigo: ' + data.codigo, 'success')
-      return data
+      toast('Partida "' + nombre + '" creada. Código: ' + data.codigo, 'success')
+      return partidaCamel
     },
 
     unirseAPartida: async (codigo) => {
@@ -1493,6 +1554,16 @@ function PantallaAuth() {
 
           <button type="submit" className="btn btn-primary" style={{width:'100%',marginTop:4}} disabled={loading}>
             {loading ? '⏳ Cargando...' : modo==='login' ? '→ Entrar' : '✨ Crear cuenta'}
+          </button>
+          <button type="button" className="btn btn-ghost" style={{width:'100%',marginTop:8,fontSize:12}}
+            onClick={async()=>{
+              try {
+                const { data, error } = await supabaseClient.from('partidas').select('count', {count: 'exact'})
+                if (error) alert('Error de conexión: ' + error.message)
+                else alert('✅ Conexión OK. Tabla partidas accesible.')
+              } catch(e) { alert('Error: ' + e.message) }
+            }}>
+            🔧 Probar conexión con Supabase
           </button>
         </form>
 
@@ -3600,6 +3671,13 @@ function TabDadosJugador({ personaje }) {
 
 function AppRoot() {
   const vista = useStore(s => s.vista)
+  const supabaseReady = useStore(s => s.supabaseReady)
+
+  // Debug: mostrar estado de conexión
+  useEffect(() => {
+    console.log('[AppRoot] Vista actual:', vista, '| Supabase ready:', supabaseReady)
+  }, [vista, supabaseReady])
+
   return React.createElement(React.Fragment, null,
     vista === 'login'   && React.createElement(PantallaAuth, null),
     vista === 'lobby'   && React.createElement(PantallaLobby, null),
@@ -3611,6 +3689,8 @@ function AppRoot() {
 
 const root = ReactDOM.createRoot(document.getElementById('root'))
 root.render(React.createElement(AppRoot, null))
+
+
 
 
 
