@@ -150,6 +150,9 @@ label{display:block;font-size:12px;color:var(--text-secondary);margin-bottom:4px
 
 
 
+
+
+
 // ============================================================
 // SUPABASE CONFIG
 // ============================================================
@@ -226,9 +229,6 @@ const hpMaxima   = (clase, nivel, con) =>
 const armorBase  = (dex, bonus = 0) => 10 + calcMod(dex) + bonus
 
 const tirarDado  = caras => Math.floor(Math.random() * caras) + 1
-const tirarDados = (n, caras) => {
-  
-// ── Helper: snake_case → camelCase ──────────────────────────────────────────
 const toCamelCase = (obj) => {
   if (obj === null || typeof obj !== 'object') return obj
   if (Array.isArray(obj)) return obj.map(toCamelCase)
@@ -240,7 +240,8 @@ const toCamelCase = (obj) => {
   return result
 }
 
-const rs = Array.from({length: n}, () => tirarDado(caras))
+const tirarDados = (n, caras) => {
+  const rs = Array.from({length: n}, () => tirarDado(caras))
   return { total: rs.reduce((a,b) => a+b, 0), resultados: rs }
 }
 
@@ -3689,6 +3690,9 @@ function AppRoot() {
 
 const root = ReactDOM.createRoot(document.getElementById('root'))
 root.render(React.createElement(AppRoot, null))
+
+
+
 
 
 
