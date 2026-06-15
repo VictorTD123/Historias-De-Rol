@@ -153,6 +153,8 @@ label{display:block;font-size:12px;color:var(--text-secondary);margin-bottom:4px
 
 
 
+
+
 // ============================================================
 // SUPABASE CONFIG
 // ============================================================
@@ -401,6 +403,7 @@ const useStore = create((set, get) => {
         event: '*', schema: 'public', table: 'personajes',
         filter: 'partida_id=eq.' + partidaId
       }, (payload) => {
+        console.log('[realtime personajes]', payload.eventType, payload.new?.id || payload.old?.id)
         if (payload.eventType === 'INSERT') {
           set(s => ({ personajes: [...s.personajes, toCamelCase(payload.new)] }))
         } else if (payload.eventType === 'UPDATE') {
@@ -713,10 +716,11 @@ const useStore = create((set, get) => {
 
     crearPersonaje: async (datos) => {
       const { usuarioActual, partidaActiva, clases, agregarLog } = get()
+      if (!usuarioActual || !partidaActiva) { get().toast('No hay partida activa', 'error'); return null }
       const clase = clases.find(c => c.id === datos.claseId) || CLASES_BASE[0]
       const vidaMax = hpMaxima(clase, 1, datos.con || 10)
       const personajeData = {
-        usuario_id: usuarioActual.id, partida_id: partidaActiva?.id, nombre: datos.nombre,
+        usuario_id: usuarioActual.id, partida_id: partidaActiva.id, nombre: datos.nombre,
         clase_id: clase.id, nivel: 1, retrato: datos.retrato || '', descripcion: datos.descripcion || '',
         str: datos.str || 10, dex: datos.dex || 10, con: datos.con || 10, int: datos.int || 10,
         wis: datos.wis || 10, cha: datos.cha || 10, vida_max: vidaMax, vida_actual: vidaMax,
@@ -725,12 +729,16 @@ const useStore = create((set, get) => {
         equipamiento: {}, estados: [], habilidades_cooldown: {}, inventario: []
       }
       for (const r of (clase.recursosEspeciales || [])) personajeData.recursos_actuales[r.nombre] = r.max
+      console.log('[crearPersonaje] Insertando personaje:', personajeData)
       const { data, error } = await supabaseClient.from('personajes').insert(personajeData).select().single()
-      if (error) { console.error(error); return }
-      set(s => ({ personajes: [...s.personajes, toCamelCase(data)] }))
+      if (error) { console.error('[crearPersonaje] Error:', error); get().toast('Error al crear personaje: ' + error.message, 'error'); return null }
+      if (!data) { get().toast('Error: no se recibió respuesta', 'error'); return null }
+      console.log('[crearPersonaje] Personaje creado:', data)
+      const personajeCamel = toCamelCase(data)
+      set(s => ({ personajes: [...s.personajes, personajeCamel] }))
       agregarLog?.('✨ ' + data.nombre + ' se une a la aventura')
       get().toast('Personaje "' + data.nombre + '" creado', 'success')
-      return data
+      return personajeCamel
     },
 
     actualizarPersonaje: async (pid, cambios) => {
@@ -1908,7 +1916,7 @@ function TabJugadores() {
 
   const jugadores=(partidaActiva?.jugadores||[]).map(id=>({
     usuario:usuarios.find(u=>u.id===id),
-    personaje:personajes.find(p=>p.usuarioId===id&&p.gameId===partidaActiva.id)
+    personaje:personajes.find(p=>p.usuarioId===id&&p.partidaId===partidaActiva.id)
   })).filter(j=>j.usuario)
 
   return (
@@ -1928,13 +1936,13 @@ function TabJugadores() {
               onTransferir={(pid)=>setTransferModal(pid)}
               onAddItem={(pid,item)=>agregarAlInventario(pid,item)}
               onRemoveItem={(pid,iid)=>quitarDelInventario(pid,iid)}
-              todosPersonajes={personajes.filter(p=>p.gameId===partidaActiva.id)}
+              todosPersonajes={personajes.filter(p=>p.partidaId===partidaActiva.id)}
             />
           ))}
         </div>
       )}
       {transferModal&&(
-        <TransferModal fromPid={transferModal} personajes={personajes.filter(p=>p.gameId===partidaActiva.id)}
+        <TransferModal fromPid={transferModal} personajes={personajes.filter(p=>p.partidaId===partidaActiva.id)}
           onTransfer={(fromPid,toPid,iid,cant)=>{transferirObjeto(fromPid,toPid,iid,cant);setTransferModal(null)}}
           onClose={()=>setTransferModal(null)}/>
       )}
@@ -2397,7 +2405,7 @@ function TabRelaciones() {
   const {partidaActiva,personajes,setRelacion,getRelacion}=useStore(s=>s)
   const [form,setForm]=useState({pid1:'',pid2:'',tipo:'Amistad',valor:50})
   const [saving,setSaving]=useState(false)
-  const jugadores=(partidaActiva?.jugadores||[]).map(id=>personajes.find(p=>p.usuarioId===id&&p.gameId===partidaActiva.id)).filter(Boolean)
+  const jugadores=(partidaActiva?.jugadores||[]).map(id=>personajes.find(p=>p.usuarioId===id&&p.partidaId===partidaActiva.id)).filter(Boolean)
   const rels=partidaActiva?.relaciones||[]
 
   const save=()=>{
@@ -2725,7 +2733,7 @@ function VistaJugador() {
   const setVista      = useStore(s => s.setVista)
   const combateActivo = useStore(s => s.combateActivo)
 
-  const miPersonaje = personajes.find(p => p.usuarioId === usuarioActual.id && p.gameId === partidaActiva?.id)
+  const miPersonaje = personajes.find(p => p.usuarioId === usuarioActual.id && p.partidaId === partidaActiva?.id)
   const [tab, setTab] = useState(miPersonaje ? 'ficha' : 'crear')
 
   if (!partidaActiva) return null
@@ -3097,7 +3105,7 @@ function TabCombate({ personaje }) {
 
   const enCombate  = partidaActiva?.enemigosEnCombate || []
   const jugadores  = (partidaActiva?.jugadores || [])
-    .map(id => personajes.find(p => p.usuarioId === id && p.gameId === partidaActiva.id))
+    .map(id => personajes.find(p => p.usuarioId === id && p.partidaId === partidaActiva.id))
     .filter(Boolean)
 
   const [armaSel, setArmaSel] = useState('')
@@ -3545,7 +3553,7 @@ function TabRelacionesJugador({ personaje }) {
   const personajes    = useStore(s => s.personajes)
   const rels          = partidaActiva?.relaciones || []
   const jugadores     = (partidaActiva?.jugadores || [])
-    .map(id => personajes.find(p => p.usuarioId === id && p.gameId === partidaActiva.id))
+    .map(id => personajes.find(p => p.usuarioId === id && p.partidaId === partidaActiva.id))
     .filter(Boolean)
 
   const misRels = rels.filter(r => r.pid1===personaje.id||r.pid2===personaje.id)
@@ -3690,6 +3698,8 @@ function AppRoot() {
 
 const root = ReactDOM.createRoot(document.getElementById('root'))
 root.render(React.createElement(AppRoot, null))
+
+
 
 
 
